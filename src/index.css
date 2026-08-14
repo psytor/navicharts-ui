@@ -1,0 +1,58 @@
+:root {
+  /* deep-space void, one notch darker/cooler than a default charcoal dark
+     theme - the app's chrome should read like a console, not a doc editor */
+  --bg: #0a0c10;
+  --bg-elevated: #15171f;
+  --border: #262a35;
+  --text: #d6d7de;
+  --text-dim: #8b8d9a;
+  --text-heading: #f3f4f6;
+  --met: #4ade80;
+  --unmet: #52545f;
+  --danger: #f08a8a;
+
+  /* brand accents are promoted straight from the energy-type colors already
+     meaningful elsewhere in the data (Badge.jsx's ENERGY_STYLES) rather than
+     invented fresh - normal energy's amber becomes the primary accent,
+     ship/fleet's cyan the cool secondary, cantina's terracotta the warm one */
+  --amber: #e8c85a;
+  --cyan: #4fc3d9;
+  --cantina: #d9713c;
+
+  --font-display: "Big Shoulders Display", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  color-scheme: dark;
+  font: 15px/1.5 system-ui, "Segoe UI", Roboto, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+input, textarea {
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+}

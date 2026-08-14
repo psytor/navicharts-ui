@@ -1,0 +1,20 @@
+name: navicharts-ui
+
+services:
+  navicharts-ui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        # Vite inlines these at build time; passed through from .env at the repo root.
+        VITE_NAVICHARTS_URL: ${VITE_NAVICHARTS_URL}
+        VITE_ASTROGATORS_TABLE_URL: ${VITE_ASTROGATORS_TABLE_URL}
+    image: navicharts-ui:latest
+    container_name: navicharts-ui
+    restart: unless-stopped
+    network_mode: host
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4176/navicharts/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

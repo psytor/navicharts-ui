@@ -1,0 +1,1924 @@
+.app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px 80px;
+}
+
+.app-wide {
+  max-width: none;
+}
+
+/* the one signature device: a thin two-corner HUD-style frame, used only on
+   the app's major containers (never nested cards) so it reads as a
+   deliberate motif rather than decoration sprayed everywhere. Color comes
+   from --bracket-color, set per-instance (defaults to the primary accent) so
+   a quadrant's own color can frame its own card. */
+.bracket-panel {
+  position: relative;
+  --bracket-color: var(--amber);
+}
+
+.bracket-panel::before,
+.bracket-panel::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.bracket-panel::before {
+  top: 0;
+  left: 0;
+  border-top: 2px solid var(--bracket-color);
+  border-left: 2px solid var(--bracket-color);
+}
+
+.bracket-panel::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: 2px solid var(--bracket-color);
+  border-right: 2px solid var(--bracket-color);
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 20px 20px;
+  margin-bottom: 20px;
+}
+
+.app-header h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 30px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+}
+
+.star-chart-source {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  margin: 0;
+}
+
+.sync-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.sync-controls input {
+  font-family: var(--font-mono);
+}
+
+.sync-controls button {
+  background: var(--amber);
+  color: #171308;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+}
+
+.sync-controls button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sync-message {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 16px;
+}
+
+.app-error, .app-loading {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-dim);
+}
+
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.view-tabs button {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-bottom: 2px solid transparent;
+}
+
+.view-tabs button:hover {
+  color: var(--text);
+}
+
+.view-tabs button.active {
+  color: var(--amber);
+  border-bottom-color: var(--amber);
+  text-shadow: 0 0 12px rgba(232, 200, 90, 0.35);
+}
+
+.episode-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.episode-tabs button {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 5px 14px;
+}
+
+.episode-tabs button:hover {
+  color: var(--text);
+}
+
+.episode-tabs button.active {
+  color: var(--bg);
+  background: var(--amber);
+  border-color: var(--amber);
+}
+
+.episode-tab-add {
+  opacity: 0.7;
+}
+
+.episode-tab-add:hover {
+  opacity: 1;
+}
+
+.new-episode-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.new-episode-form input {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 5px 10px;
+  font-size: 13px;
+}
+
+.new-episode-form input[type="number"] {
+  width: 80px;
+}
+
+.quadrants {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.roadmap-intro {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin: 0 0 16px;
+}
+
+/* flexbox, not grid - a CSS grid track stretches every box in a row to the
+   same width regardless of how much content it actually has, which left
+   visible blank space inside any box with fewer cards than its neighbors.
+   Flex items only take the width their own content needs, so boxes of
+   different sizes (a 2-card energy box vs. a 6-card one) sit flush against
+   each other with no dead space, wrapping to a new row when they run out
+   of horizontal room. */
+.roadmap-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.roadmap-grid + .roadmap-grid {
+  margin-top: 12px;
+}
+
+.location-group {
+  width: fit-content;
+  max-width: 260px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 10px 12px;
+}
+
+.location-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.location-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* energy campaign boxes (Cantina/Light Side/Dark Side/Fleet Battles) are
+   capped to a handful of active units - a fixed 2-column grid keeps every
+   box a similar compact height instead of an unbounded wrapped list */
+.location-card-grid-energy {
+  display: grid;
+  grid-template-columns: repeat(2, 76px);
+  gap: 8px;
+}
+
+.unit-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  text-align: center;
+}
+
+.unit-card .badge {
+  margin-top: 4px;
+}
+
+/* Sized to exactly match .unit-card .unit-portrait (56x56, below) so
+   CurrencyCornerBadge (Badge.jsx) - the same .req-corner-badge overlay
+   RequirementPortrait uses in Visualise - lands right on the portrait's
+   corner here too, instead of the card's corner. No margin/flex-shrink
+   (unlike .req-portrait-wrap, built for a horizontal flow-node row) since
+   this sits in a centered vertical card instead. */
+.unit-card-portrait-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.unit-card-priority {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* Gearing Order cards - wider than a plain .unit-card to fit the same
+   portrait+gear-ring+badge rendering the Inventory tab uses (see
+   GearRingPortrait), so current gear/relic tier is visible at a glance. */
+.gear-order-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 128px;
+  text-align: center;
+}
+
+/* Not in the roster at all yet - shaded to flag "farm this before gearing
+   it", distinct from a normal in-progress (unshaded) gearing task. */
+.gear-order-card--unowned {
+  opacity: 0.5;
+}
+
+.gear-order-card--unowned .unit-card-progress {
+  font-style: italic;
+}
+
+.gearing-section {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: #c084fc;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 14px 16px;
+}
+
+.gearing-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c084fc;
+  margin-bottom: 4px;
+}
+
+.gearing-section .roadmap-intro {
+  margin-bottom: 12px;
+}
+
+.assault-section {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: #e0995a;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 14px 16px;
+}
+
+.assault-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #e0995a;
+  margin-bottom: 4px;
+}
+
+.assault-section .roadmap-intro {
+  margin-bottom: 12px;
+}
+
+.journey-section {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: #7ed957;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 14px 16px;
+}
+
+.journey-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #7ed957;
+  margin-bottom: 4px;
+}
+
+.journey-section .roadmap-intro {
+  margin-bottom: 12px;
+}
+
+.shipment-section {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: #8c9bd0;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 14px 16px;
+}
+
+.shipment-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8c9bd0;
+  margin-bottom: 4px;
+}
+
+.shipment-section .roadmap-intro {
+  margin-bottom: 12px;
+}
+
+.unit-card .unit-portrait {
+  width: 56px;
+  height: 56px;
+  border-radius: 6px;
+  margin-bottom: 4px;
+}
+
+.unit-card-name {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.unit-card-stars {
+  font-size: 11px;
+  color: var(--amber);
+  margin-top: 2px;
+}
+
+.unit-card-location-detail {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  line-height: 1.2;
+}
+
+.unit-card-progress {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* ---- Inventory tab ---- */
+
+.inventory-panel {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 14px 16px;
+}
+
+.inventory-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 12px;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 12px;
+}
+
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 128px;
+  text-align: center;
+}
+
+.character-card-portrait-wrap {
+  position: relative;
+  width: 128px;
+  height: 120px;
+  /* Ring sprites are nearly invisible at native size behind the portrait -
+     scaled up so they read as a visible ring. Empirically derived; retune
+     here first if it looks off once actually rendered. */
+  --ring-scale: 1.05;
+  /* Gear-tier crescents (1-12) read a bit large at --ring-scale - a slightly
+     smaller scale keeps the portrait's own edge sitting at roughly the
+     crescent's vertical midpoint instead of the crescent overshooting past it. */
+  --ring-scale-gear: 0.92;
+  /* Baked-pair gear rings (tiers 5/8/10 - see BAKED_PAIR_TIERS) don't share a
+     crop convention with the crescent tiers (measured: tier 5 has ~6px
+     transparent padding per side, tiers 8/10 have none at all), so they need
+     their own scale to land on the same effective ring size as the crescent
+     tiers instead of rendering oversized/undersized. --ring-scale-pair-flush
+     (tiers 8/10) is empirically verified against Vader (tier 9, crescent) -
+     rendered screenshots compared directly, not just computed. There's no
+     tier-5 unit in the synced roster to verify --ring-scale-pair-inset the
+     same way, so it's inferred from --ring-scale-pair-flush scaled by the
+     two tiers' measured content-width ratio (92/104) - retune against a real
+     tier-5 unit if one shows up looking off. */
+  --ring-scale-pair-inset: 1.0;
+  --ring-scale-pair-flush: 0.88;
+}
+
+.character-card-portrait-wrap .unit-portrait {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.character-card--unowned .character-card-portrait-wrap .unit-portrait {
+  filter: grayscale(1) brightness(0.6);
+}
+
+/* Two-crescent ring: the outer <span> handles position + outward scaling
+   (always a POSITIVE scale, growing away from the shared center seam); the
+   inner <img> handles the horizontal mirror for the right side only. Mixing
+   scaleX(-1) into the outer element's own transform flips its growth
+   direction too (not just its pixel content), which made both halves land
+   on top of each other - confirmed by inspecting getBoundingClientRect,
+   both ended up at the identical rect. Keeping the mirror on a separate
+   inner element with its own default (centered) transform-origin avoids
+   that entirely. */
+.character-card-ring-crescent {
+  position: absolute;
+  top: 50%;
+  display: block;
+}
+
+.character-card-ring-crescent img {
+  display: block;
+}
+
+.character-card-ring-crescent--left {
+  right: 50%;
+  transform: translateY(-50%) scale(var(--ring-scale));
+  transform-origin: right center;
+}
+
+.character-card-ring-crescent--right {
+  left: 50%;
+  transform: translateY(-50%) scale(var(--ring-scale));
+  transform-origin: left center;
+}
+
+.character-card-ring-crescent--right img {
+  transform: scaleX(-1);
+}
+
+/* Gear-tier crescents (tiers 1-12) are a smaller native sprite than the
+   alignment/relic tier-13 ones and sit with more visible gap from the
+   portrait at the same seam anchor - pulled in an extra few px so they hug
+   the portrait the same way the tier-13/relic ring already does. */
+.character-card-ring-crescent--gear.character-card-ring-crescent--left {
+  right: calc(50% - 4px);
+  transform: translateY(-50%) scale(var(--ring-scale-gear));
+}
+
+.character-card-ring-crescent--gear.character-card-ring-crescent--right {
+  left: calc(50% - 4px);
+  transform: translateY(-50%) scale(var(--ring-scale-gear));
+}
+
+/* Tiers 4/6/7/9/11/12: real Unity 9-slice Border data (see CharacterCard.jsx
+   CRESCENT_FLUSH_TIERS) says these 6 are one single group, distinct from
+   1/2/3 above - confirmed empirically against tier 12 (the one the user
+   directly flagged and verified), applied uniformly to the rest of the
+   group rather than each tier getting its own guessed offset. */
+.character-card-ring-crescent--gear.character-card-ring--flush.character-card-ring-crescent--left {
+  right: calc(50% - 1.5px);
+}
+
+.character-card-ring-crescent--gear.character-card-ring--flush.character-card-ring-crescent--right {
+  left: calc(50% - 1.5px);
+}
+
+/* Tiers 5/8/10: sprite already contains both halves - center as one image.
+   These are gear-tier rings too (never used for the alignment/relic tier-13
+   ring, which is always mirror mode - see ringSource). --ring-scale-pair-inset
+   is tuned for tier 5's padded sprite; tiers 8/10 (no padding at all - see
+   --ring-scale-pair-flush above) get the smaller --flush scale instead,
+   applied via the modifier class below. */
+.character-card-ring-pair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(var(--ring-scale-pair-inset));
+}
+
+.character-card-ring-pair.character-card-ring--flush {
+  transform: translate(-50%, -50%) scale(var(--ring-scale-pair-flush));
+}
+
+.character-card-ring--muted {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+/* Small bottom-of-portrait badge (35px = half of the 70px portrait, so the
+   vertical position is exact regardless of ring tuning). Relic and level
+   badges are different native sprites (58x58 vs 34x30) and read better at
+   slightly different sizes rather than forcing both into one fixed box. */
+.character-card-relic-badge {
+  position: absolute;
+  top: calc(50% + 35px);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.character-card-relic-badge--relic {
+  width: 36px;
+  height: 36px;
+}
+
+.character-card-relic-badge--level {
+  width: 26px;
+  height: 26px;
+}
+
+.character-card-number {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-heading);
+  text-shadow: 0 0 4px #000, 0 0 4px #000;
+  pointer-events: none;
+}
+
+.character-card-number--center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+}
+
+.character-card-number--badge {
+  top: calc(50% + 35px);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 10px;
+}
+
+.character-card-stars {
+  display: flex;
+  gap: 1px;
+  margin-top: 4px;
+}
+
+.character-card-stars img {
+  width: 10px;
+  height: 10px;
+}
+
+.character-card--unowned .character-card-stars {
+  opacity: 0.35;
+}
+
+.character-card-name {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--text);
+  margin-top: 2px;
+}
+
+.character-card--unowned .character-card-name {
+  color: var(--text-dim);
+}
+
+.quadrant {
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.quadrant-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 16px;
+}
+
+.quadrant-header-toggle {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  color: var(--text-heading);
+  text-align: left;
+}
+
+.quadrant-move-controls {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.quadrant-move-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 4px;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.quadrant-move-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.quadrant-move-btn:not(:disabled):hover {
+  color: var(--text-heading);
+  border-color: var(--text-dim);
+}
+
+.quadrant-edit-btn {
+  width: auto;
+  padding: 0 8px;
+}
+
+.quadrant-delete-btn {
+  width: auto;
+  padding: 0 8px;
+  color: var(--danger);
+}
+
+.quadrant-delete-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.quadrant-delete-btn.confirming {
+  background: var(--danger);
+  color: var(--bg);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+
+.quadrant-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.quadrant-index {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+
+.quadrant-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-grow: 1;
+}
+
+.quadrant-progress {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.quadrant-toggle {
+  font-size: 18px;
+  color: var(--text-dim);
+  width: 20px;
+  text-align: center;
+}
+
+.quadrant-sectors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px 16px;
+}
+
+.sector-card {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.sector-card.sector-complete {
+  border-color: var(--met);
+}
+
+.requirements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.squad-name {
+  font-weight: 600;
+  color: var(--text-heading);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.usable-for {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 2px 0 0;
+}
+
+.leads-to {
+  font-size: 12px;
+  color: #c084fc;
+  margin: 2px 0 0;
+}
+
+.requirement-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.unit-name {
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.unit-portrait {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.sector-status-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.status-met {
+  background: var(--met);
+}
+
+.status-unmet {
+  background: var(--unmet);
+}
+
+.badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.badge-gear {
+  background: rgba(232, 200, 90, 0.15);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.badge-relic {
+  background: rgba(217, 113, 92, 0.15);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.badge-energy {
+  background: transparent;
+}
+
+.badge-energy-readonly {
+  background: rgba(232, 200, 90, 0.1);
+  border-style: dashed;
+  color: var(--text-dim);
+}
+
+.badge-currency {
+  background: rgba(140, 160, 200, 0.12);
+  color: #b7c2e0;
+}
+
+.badge-omicron {
+  color: #c084fc;
+  border-color: #c084fc;
+}
+
+/* Advisory suggestion, not a requirement like badge-omicron - deliberately a
+   calmer/dashed treatment so it doesn't read as "needed". */
+.badge-lst {
+  background: rgba(79, 195, 217, 0.1);
+  border-style: dashed;
+  color: #4fc3d9;
+}
+
+.quadrant-rewards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 16px 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.quadrant-rewards-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.reward-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.reward-name {
+  font-weight: 500;
+  color: var(--text-heading);
+}
+
+.reward-type {
+  font-weight: 400;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.reward-unlocked-by {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+.sector-notes {
+  margin-top: 8px;
+}
+
+.notes-text {
+  font-size: 13px;
+  color: var(--text-dim);
+  font-style: italic;
+  margin: 0;
+  cursor: pointer;
+  border-left: 2px solid var(--border);
+  padding-left: 8px;
+}
+
+.add-note-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  padding: 0;
+}
+
+.notes-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.notes-edit textarea {
+  width: 100%;
+  resize: vertical;
+}
+
+.notes-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.notes-actions button {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.add-quadrant-container {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
+}
+
+.add-quadrant-toggle {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 10px 20px;
+  width: 100%;
+}
+
+.add-quadrant-panel {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 16px;
+  width: 100%;
+}
+
+.add-quadrant-error {
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.add-quadrant-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.add-quadrant-actions button:first-child {
+  background: #5865b8;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+}
+
+.add-quadrant-actions button:last-child {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 14px;
+}
+
+/* Quadrant builder form */
+
+.quadrant-builder-edit-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #c084fc;
+  margin-bottom: 8px;
+}
+
+.quadrant-builder-header {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.quadrant-builder-header input {
+  flex-grow: 1;
+}
+
+.sector-editor {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sector-editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sector-editor-title {
+  font-weight: 600;
+  color: var(--text-heading);
+  font-size: 13px;
+}
+
+.sector-editor-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.sector-editor-controls button {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.sector-editor input[type="text"],
+.sector-editor textarea {
+  width: 100%;
+}
+
+.req-editor {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.req-editor select,
+.req-editor input[type="text"] {
+  font-size: 12px;
+  padding: 4px 6px;
+}
+
+.req-editor input[type="text"] {
+  width: 110px;
+}
+
+.req-editor-unit {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.req-location-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  max-width: 220px;
+}
+
+.checklist {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.checklist-label {
+  font-weight: 600;
+}
+
+.checklist-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lst-checklist {
+  border: 1px dashed rgba(79, 195, 217, 0.4);
+}
+
+/* flex-basis: 100% forces a wrap here, pushing Currency (and everything
+   after it) onto its own line below - .req-editor is one wrapping flex
+   row, not literal stacked rows, so this is what gives Omicron its own row. */
+.omicron-checklist {
+  flex-basis: 100%;
+  border: 1px solid rgba(192, 132, 252, 0.3);
+}
+
+.omicron-checklist .checklist-label {
+  color: #c084fc;
+}
+
+.checklist-option-lst {
+  color: #4fc3d9;
+}
+
+.req-remove {
+  background: none;
+  border: none;
+  color: var(--danger);
+  font-size: 16px;
+  padding: 0 4px;
+  margin-left: auto;
+}
+
+.unlocks-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px dashed var(--border);
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.unlocks-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.reward-editor {
+  display: flex;
+  gap: 6px;
+}
+
+.reward-editor input {
+  flex-grow: 1;
+}
+
+.sector-add-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.add-sector-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.add-sector-buttons button {
+  background: none;
+  border: 1px dashed var(--border);
+  color: var(--text-dim);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  flex-grow: 1;
+}
+
+.downstream-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.downstream-label {
+  font-weight: 600;
+}
+
+.downstream-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.downstream-quadrant-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  flex-basis: 100%;
+}
+
+.downstream-quadrant-toggle {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.downstream-quadrant-toggle:hover {
+  color: var(--text);
+}
+
+.downstream-option-cross {
+  padding-left: 4px;
+}
+
+/* Unit picker */
+
+.unit-picker {
+  position: relative;
+  display: inline-block;
+}
+
+.unit-picker input {
+  width: 200px;
+}
+
+.unit-picker-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 10;
+  list-style: none;
+  margin: 2px 0 0;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  width: 240px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.unit-picker-dropdown li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.unit-picker-dropdown li:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.unit-picker-dropdown img {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.unit-picker-type {
+  margin-left: auto;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.unit-picker-selected {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.unit-picker-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+}
+
+.unit-picker-clear {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-decoration: underline;
+}
+
+/* ---- Visualise (flowchart) tab ---- */
+
+.app-wide {
+  max-width: none;
+}
+
+.flow-view {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.flow-view-canvas {
+  flex: 1;
+  height: 75vh;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.flow-view .react-flow {
+  --xy-background-color: var(--bg);
+  --xy-node-background-color: var(--bg-elevated);
+  --xy-node-border: 1px solid var(--border);
+  --xy-node-border-radius: 8px;
+  --xy-node-color: var(--text);
+  --xy-edge-stroke: var(--text-dim);
+  --xy-controls-button-background-color: var(--bg-elevated);
+  --xy-controls-button-color: var(--text);
+  --xy-controls-button-border-color: var(--border);
+  --xy-minimap-background-color: var(--bg-elevated);
+  --xy-minimap-mask-background-color: rgba(0, 0, 0, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow-view .react-flow__edge.animated path {
+    animation: none;
+  }
+}
+
+/* routed sector edges connect from whichever side actually faces their
+   target (see routeOrthogonal in flowGraph.js), not always top/bottom, so
+   the fixed-position handle dot no longer lines up with most of them -
+   hidden rather than left looking randomly disconnected. Handles still
+   need to exist (React Flow requires them to resolve source/target), just
+   not be visible. */
+.flow-view .react-flow__handle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.squad-loadout-panel {
+  width: 220px;
+  flex-shrink: 0;
+  max-height: 75vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 12px;
+}
+
+.squad-pool-header {
+  margin-top: 16px;
+}
+
+/* Squad builder section - sits at the end of the Plan tab's quadrant list
+   (App.jsx), styled as a full-width block like .gearing-section rather than
+   the narrow sidebar .squad-loadout-panel used for the read-only display in
+   Visualise (see SquadList in SquadBuilder.jsx). */
+.squad-builder-section {
+  margin-top: 20px;
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-left-color: var(--cyan);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 14px 16px;
+}
+
+.squad-empty-hint {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.squad-type-group + .squad-type-group {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border);
+}
+
+.squad-type-header {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.squad-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.squad-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.squad-card-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.squad-card-name {
+  font-weight: 600;
+  color: var(--text-heading);
+}
+
+.squad-purpose-badge {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--cyan);
+  border: 1px solid var(--cyan);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.squad-card-actions {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.squadcard-action-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  border-radius: 4px;
+  padding: 0 8px;
+  height: 26px;
+  font-size: 13px;
+}
+
+.squadcard-action-btn:hover {
+  color: var(--text-heading);
+  border-color: var(--text-dim);
+}
+
+.squadcard-delete-btn {
+  color: var(--danger);
+}
+
+.squadcard-delete-btn:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.squadcard-delete-btn.confirming {
+  background: var(--danger);
+  color: var(--bg);
+  border-color: var(--danger);
+  font-weight: 600;
+}
+
+.squad-card-notes {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+}
+
+.squad-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.squad-slot {
+  position: relative;
+  width: 90px;
+  min-height: 108px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 8px 4px 4px;
+  text-align: center;
+}
+
+.squad-slot-filled {
+  border-style: solid;
+  background: var(--bg);
+}
+
+.squad-slot-special {
+  border-color: var(--amber);
+}
+
+.squad-slot-special.squad-slot-filled {
+  border-width: 2px;
+}
+
+.squad-slot-label {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-elevated);
+  padding: 0 4px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+}
+
+.squad-slot-special .squad-slot-label {
+  color: var(--amber);
+}
+
+.squad-slot-placeholder {
+  color: var(--text-dim);
+  font-size: 11px;
+  padding: 12px 2px;
+}
+
+.squad-slot-clear {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--danger);
+  font-size: 11px;
+  padding: 0;
+}
+
+.squad-pool-card {
+  cursor: grab;
+}
+
+.squad-pool-card:active {
+  cursor: grabbing;
+}
+
+.squad-special-badge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--bg);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.squad-member-special {
+  position: relative;
+}
+
+.quadrant-group-node {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1.5px dashed currentColor;
+  border-radius: 10px;
+  /* deliberately no fill - like the reference guide's own dashed boxes,
+     which are outlines only. A filled panel would sit between the canvas
+     and every line crossing it, so a crossing line always reads as "drawn
+     on top of the box"; an outline has nothing for a line to visually
+     compete with */
+  background: none;
+}
+
+.quadrant-group-node-label {
+  position: absolute;
+  top: -14px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg);
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.quadrant-group-node-label .quadrant-dot {
+  width: 8px;
+  height: 8px;
+}
+
+.quadrant-group-node-label .quadrant-index {
+  font-size: 10px;
+}
+
+.quadrant-group-node-label .quadrant-name {
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+.squad-flow-node {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.squad-flow-node.squad-flow-node-complete {
+  border-color: var(--met);
+}
+
+.squad-flow-node-header {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: var(--text-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.squad-flow-node-reqs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.squad-flow-node-req {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 4-corner requirement card (RequirementPortrait in Badge.jsx) - portrait
+   sized up from the base 24px .unit-portrait so the corner badges have room
+   to read, roughly the same badge:portrait ratio as the reference guide
+   (tmp/Farming Phase 1.png) this was modeled on. */
+.req-portrait-wrap {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  margin: 6px;
+}
+
+.req-portrait-wrap .unit-portrait {
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+}
+
+.req-corner-badge {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+  /* later entries in a cascaded corner stack (see --stack-index, set inline
+     per-icon in Badge.jsx's CornerIcon) sit visually in front */
+  z-index: calc(2 + var(--stack-index, 0));
+}
+
+.req-corner-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.req-corner-badge--tier {
+  top: -6px;
+  left: -6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 9px;
+}
+
+.req-corner-badge--gear {
+  background: var(--amber);
+  color: #24211a;
+}
+
+.req-corner-badge--relic {
+  background: var(--danger);
+  color: #2a1512;
+}
+
+.req-corner-badge--omicron {
+  top: -6px;
+  right: -6px;
+  background: rgba(20, 20, 26, 0.9);
+}
+
+/* Cascade: each additional icon in the same corner is nudged further out
+   (away from the portrait) per --stack-index, so a multi-value corner reads
+   as an overlapping fan rather than icons piling up on the same spot. */
+.req-corner-badge--energy {
+  bottom: -6px;
+  left: -6px;
+  background: rgba(20, 20, 26, 0.9);
+  transform: translate(calc(var(--stack-index, 0) * -6px), calc(var(--stack-index, 0) * 6px));
+}
+
+/* Bottom-right cascades real currency icons first (--stack-index 0, back of
+   the stack), then any advisory LST icon(s) last (highest --stack-index -
+   see RequirementPortrait) - so LST ends up frontmost/furthest out, reading
+   as the more prominent suggestion when both exist. */
+.req-corner-badge--currency {
+  bottom: -6px;
+  right: -6px;
+  background: rgba(20, 20, 26, 0.9);
+  transform: translate(calc(var(--stack-index, 0) * 6px), calc(var(--stack-index, 0) * 6px));
+}
+
+.req-corner-badge-text {
+  font-family: var(--font-mono);
+  font-size: 7px;
+  font-weight: 700;
+  color: #4fc3d9;
+}
+
+.reward-flow-node {
+  cursor: pointer;
+}
+
+.reward-flow-node-hex {
+  width: 140px;
+  height: 70px;
+  clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  background: var(--bg-elevated);
+  border: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 16px;
+  gap: 2px;
+}
+
+.reward-flow-node-hex .unit-portrait {
+  width: 20px;
+  height: 20px;
+}
+
+.reward-flow-node-complete .reward-flow-node-hex {
+  border-color: var(--met);
+  background: color-mix(in srgb, var(--met) 15%, var(--bg-elevated));
+}
+
+.reward-flow-node-saving {
+  opacity: 0.6;
+}
+
+.reward-flow-node-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-heading);
+  line-height: 1.2;
+}
+
+.reward-flow-node-type {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.reward-flow-node-banner {
+  position: relative;
+  width: 120px;
+  height: 160px;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 2px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.reward-flow-node-banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.reward-flow-node-banner-name {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 6px 8px;
+  background: linear-gradient(to top, rgba(10, 10, 14, 0.92), rgba(10, 10, 14, 0));
+  color: var(--text-heading);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.reward-flow-node-complete .reward-flow-node-banner {
+  border-color: var(--met);
+}
