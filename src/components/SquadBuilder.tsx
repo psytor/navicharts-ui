@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from 'astrogators-shared-ui';
 import { api } from '../api';
 import { UnitPortrait } from './Badge';
 import type { Squad, SquadMember, SquadMemberIn, Unit } from '../types';
@@ -296,19 +297,31 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
 // SquadBuilder has produced, no create/edit/delete affordances and no unit
 // pool (that's only useful while actively building, see SquadBuilder).
 export function SquadList() {
+  const { isAuthenticated } = useAuth();
   const [squads, setSquads] = useState<Squad[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // GET /squads/mine requires a logged-in user (squads are always
+    // per-owner, there's no "curated"/read-only-without-login case like
+    // star charts) - skip the call entirely rather than let an
+    // unauthenticated request surface the backend's raw 401 text.
+    if (!isAuthenticated) return;
     api.getMySquads().then(setSquads).catch((e) => setError(e.message));
-  }, []);
+  }, [isAuthenticated]);
 
   return (
     <aside className="squad-loadout-panel bracket-panel" style={{ '--bracket-color': 'var(--cyan)' } as React.CSSProperties}>
       <div className="location-header">Squads</div>
-      {error && <p className="add-quadrant-error">{error}</p>}
-      {squads.length === 0 && !error && (
-        <p className="squad-empty-hint">No squads yet - build some in the Plan tab.</p>
+      {!isAuthenticated ? (
+        <p className="squad-empty-hint">Log in to see your squads.</p>
+      ) : (
+        <>
+          {error && <p className="add-quadrant-error">{error}</p>}
+          {squads.length === 0 && !error && (
+            <p className="squad-empty-hint">No squads yet - build some in the Plan tab.</p>
+          )}
+        </>
       )}
       {Object.entries(SQUAD_TYPE_CONFIG).map(([type, cfg]) => {
         const typeSquads = squads.filter((sq) => sq.squad_type === type);
@@ -331,6 +344,7 @@ export function SquadList() {
 // Full builder for the Plan tab - sits at the end of the quadrant list, since
 // squads are assembled from whatever units the plan above has you farming.
 export function SquadBuilder() {
+  const { isAuthenticated } = useAuth();
   const [squads, setSquads] = useState<Squad[]>([]);
   const [pool, setPool] = useState<Unit[]>([]);
   const [editingSquadId, setEditingSquadId] = useState<number | null>(null);
@@ -342,9 +356,13 @@ export function SquadBuilder() {
   }
 
   useEffect(() => {
+    // Squads (list, create, edit) are always per-owner - nothing here is
+    // reachable without a token, so skip both fetches entirely rather than
+    // let the backend's raw 401 text surface as the "error" state.
+    if (!isAuthenticated) return;
     loadSquads();
     api.getRequiredUnits().then(setPool).catch((e) => setError(e.message));
-  }, []);
+  }, [isAuthenticated]);
 
   function handleSaved() {
     setEditingSquadId(null);
@@ -355,6 +373,15 @@ export function SquadBuilder() {
   async function handleDelete(squadId: number) {
     await api.deleteSquad(squadId);
     loadSquads();
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <section className="squad-builder-section">
+        <div className="location-header">Squads</div>
+        <p className="squad-empty-hint">Log in to build squads.</p>
+      </section>
+    );
   }
 
   return (
