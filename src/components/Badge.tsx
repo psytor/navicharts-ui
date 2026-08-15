@@ -14,6 +14,31 @@ function currencyIcon(name?: string): string | undefined {
   return name ? currencyIcons[`../assets/currency-icons/${name}.png`] : undefined;
 }
 
+const IMG_RETRY_MAX = 2;
+const IMG_RETRY_DELAY_MS = 500;
+
+// Remote portrait/banner images (AE2) occasionally fail to load on the
+// first attempt - a plain onError-hides-forever handler leaves that image
+// permanently blank until a full page reload. Retries the same URL a
+// couple of times with a short delay before giving up, since re-requesting
+// is enough to recover from a transient hiccup.
+export function retryableImgOnError(maxRetries: number = IMG_RETRY_MAX, delayMs: number = IMG_RETRY_DELAY_MS) {
+  return (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    const attempt = Number(img.dataset.retryAttempt || '0');
+    if (attempt < maxRetries) {
+      img.dataset.retryAttempt = String(attempt + 1);
+      const src = img.src;
+      setTimeout(() => {
+        img.src = '';
+        img.src = src;
+      }, delayMs);
+    } else {
+      img.style.visibility = 'hidden';
+    }
+  };
+}
+
 interface UnitPortraitProps {
   unit: Unit | null | undefined;
 }
@@ -28,9 +53,7 @@ export function UnitPortrait({ unit }: UnitPortraitProps) {
       src={unit.thumbnail_url ?? undefined}
       alt={unit.name}
       loading="lazy"
-      onError={(e) => {
-        (e.target as HTMLImageElement).style.visibility = 'hidden';
-      }}
+      onError={retryableImgOnError()}
     />
   );
 }

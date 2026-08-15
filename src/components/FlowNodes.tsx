@@ -1,6 +1,7 @@
 import { BaseEdge, Handle, Position } from '@xyflow/react';
 import {
   UnitPortrait, RequirementPortrait, StatusDot, derivedEnergyTypes, currencyLabel, UNIT_REWARD_TYPES,
+  retryableImgOnError,
 } from './Badge';
 import type { Sector, Reward, SectorRequirement, Quadrant } from '../types';
 
@@ -82,9 +83,7 @@ export function RewardFlowNode({ data }: { data: { reward: Reward } }) {
             src={reward.event!.image_url ?? undefined}
             alt={reward.name}
             loading="lazy"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.visibility = 'hidden';
-            }}
+            onError={retryableImgOnError()}
           />
           <span className="reward-flow-node-banner-name">{reward.name}</span>
         </div>

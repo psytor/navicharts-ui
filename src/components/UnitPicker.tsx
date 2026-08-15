@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { retryableImgOnError } from './Badge';
 import type { Unit } from '../types';
 
 interface UnitPickerProps {
@@ -24,7 +25,7 @@ export function UnitPicker({ units, value, onChange }: UnitPickerProps) {
           className="unit-picker-thumb"
           src={value.thumbnail_url ?? undefined}
           alt=""
-          onError={(e) => ((e.target as HTMLImageElement).style.visibility = 'hidden')}
+          onError={retryableImgOnError()}
         />
         <span>{value.name}</span>
         <button type="button" className="unit-picker-clear" onClick={() => onChange(null)}>
@@ -61,7 +62,7 @@ export function UnitPicker({ units, value, onChange }: UnitPickerProps) {
               <img
                 src={u.thumbnail_url ?? undefined}
                 alt=""
-                onError={(e) => ((e.target as HTMLImageElement).style.visibility = 'hidden')}
+                onError={retryableImgOnError()}
               />
               <span>{u.name}</span>
               <span className="unit-picker-type">{u.unit_type}</span>

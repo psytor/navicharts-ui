@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { retryableImgOnError } from './Badge';
 import type { GameEvent } from '../types';
 
 interface EventPickerProps {
@@ -24,7 +25,7 @@ export function EventPicker({ events, value, onChange }: EventPickerProps) {
           className="unit-picker-thumb"
           src={value.image_url ?? undefined}
           alt=""
-          onError={(e) => ((e.target as HTMLImageElement).style.visibility = 'hidden')}
+          onError={retryableImgOnError()}
         />
         <span>{value.name}</span>
         <button type="button" className="unit-picker-clear" onClick={() => onChange(null)}>
@@ -61,7 +62,7 @@ export function EventPicker({ events, value, onChange }: EventPickerProps) {
               <img
                 src={e.image_url ?? undefined}
                 alt=""
-                onError={(evt) => ((evt.target as HTMLImageElement).style.visibility = 'hidden')}
+                onError={retryableImgOnError()}
               />
               <span>{e.name}</span>
             </li>
