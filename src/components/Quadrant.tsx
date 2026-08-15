@@ -89,7 +89,7 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
         <div className="quadrant-rewards">
           <div className="quadrant-rewards-label">Rewards</div>
           {rewards.map((r) => (
-            <RewardRow key={r.id} reward={r} onChange={onChange} canModify={canModify} />
+            <RewardRow key={r.id} reward={r} />
           ))}
         </div>
       )}

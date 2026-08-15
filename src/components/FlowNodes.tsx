@@ -1,9 +1,7 @@
 import { BaseEdge, Handle, Position } from '@xyflow/react';
-import { useState } from 'react';
 import {
-  UnitPortrait, RequirementPortrait, StatusDot, derivedEnergyTypes, currencyLabel,
+  UnitPortrait, RequirementPortrait, StatusDot, derivedEnergyTypes, currencyLabel, UNIT_REWARD_TYPES,
 } from './Badge';
-import { api } from '../api';
 import type { Sector, Reward, SectorRequirement, Quadrant } from '../types';
 
 // Path is precomputed in flowGraph.ts's routeOrthogonal (full canvas
@@ -55,20 +53,14 @@ export function SquadFlowNode({ data }: { data: { sector: Sector } }) {
   );
 }
 
-export function RewardFlowNode({ data }: { data: { reward: Reward; onChange?: () => void; canModify?: boolean } }) {
-  const { reward, onChange, canModify = false } = data;
-  const [saving, setSaving] = useState(false);
-
-  async function toggle() {
-    if (!canModify) return;
-    setSaving(true);
-    try {
-      await api.completeReward(reward.id, !reward.completed);
-      onChange?.();
-    } finally {
-      setSaving(false);
-    }
-  }
+// No manual toggle for any reward type - unit-shaped rewards
+// (character_unlock/ship_unlock/capital_ship) show the "complete" styling
+// derived server-side from the roster snapshot (7*); assault_battle/
+// feature_unlock rewards have no completion signal at all, so they never
+// get that styling regardless of the stored (now-unused) flag.
+export function RewardFlowNode({ data }: { data: { reward: Reward } }) {
+  const { reward } = data;
+  const isComplete = UNIT_REWARD_TYPES.has(reward.reward_type) && reward.completed;
 
   // reward.event is resolved backend-side: either the reward's own picked
   // event (assault_battle) or, for unit-linked reward types, its unit's
@@ -79,9 +71,8 @@ export function RewardFlowNode({ data }: { data: { reward: Reward; onChange?: ()
 
   return (
     <div
-      className={`reward-flow-node ${reward.completed ? 'reward-flow-node-complete' : ''} ${saving ? 'reward-flow-node-saving' : ''}`}
-      onClick={toggle}
-      title={`${reward.name} (${reward.reward_type.replace(/_/g, ' ')})${canModify ? ' - click to toggle' : ''}`}
+      className={`reward-flow-node ${isComplete ? 'reward-flow-node-complete' : ''}`}
+      title={`${reward.name} (${reward.reward_type.replace(/_/g, ' ')})`}
     >
       <Handle type="target" position={Position.Top} id="in" />
       {isBanner ? (

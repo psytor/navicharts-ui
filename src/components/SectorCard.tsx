@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   TierBadge, EnergyBadge, CurrencyBadge, OmicronBadge, LstBadge, StatusDot, UnitPortrait,
-  derivedEnergyTypes,
+  derivedEnergyTypes, UNIT_REWARD_TYPES,
 } from './Badge';
 import { api } from '../api';
 import type { Sector, SectorRequirement, Reward } from '../types';
@@ -21,44 +21,22 @@ function RequirementRow({ req }: { req: SectorRequirement }) {
   );
 }
 
-interface RewardRowProps {
-  reward: Reward;
-  onChange: () => void;
-  // Curated charts are admin-only to edit server-side (see star_charts.py's
-  // module docstring) - a non-admin viewing one would 404 on this call, so
-  // the checkbox is rendered read-only (disabled, no click handler) instead
-  // of letting the click throw an unhandled request error.
-  canModify: boolean;
-}
-
-export function RewardRow({ reward, onChange, canModify }: RewardRowProps) {
-  const [saving, setSaving] = useState(false);
-
-  async function toggle() {
-    setSaving(true);
-    try {
-      await api.completeReward(reward.id, !reward.completed);
-      onChange();
-    } finally {
-      setSaving(false);
-    }
-  }
-
+// No manual toggle for any reward type - unit-shaped rewards
+// (character_unlock/ship_unlock/capital_ship) show a read-only dot derived
+// server-side from the roster snapshot; assault_battle/feature_unlock
+// rewards have no completion signal at all and just display plainly.
+export function RewardRow({ reward }: { reward: Reward }) {
+  const isUnitReward = UNIT_REWARD_TYPES.has(reward.reward_type);
   return (
-    <label className="reward-checkbox">
-      <input
-        type="checkbox"
-        checked={reward.completed}
-        disabled={saving || !canModify}
-        onChange={canModify ? toggle : undefined}
-      />
+    <div className="reward-checkbox">
+      {isUnitReward && <StatusDot met={reward.completed} />}
       <UnitPortrait unit={reward.unit} />
       <span className="reward-name">
         {reward.name}
         <span className="reward-type"> ({reward.reward_type.replace(/_/g, ' ')})</span>
       </span>
       {reward.unlocked_by && <span className="reward-unlocked-by">unlocked by {reward.unlocked_by}</span>}
-    </label>
+    </div>
   );
 }
 

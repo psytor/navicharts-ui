@@ -16,16 +16,8 @@ const edgeTypes = {
   routedSector: RoutedSectorEdge,
 };
 
-export function FlowView({ starChart, onChange, canModify }: { starChart: StarChart; onChange: () => void; canModify: boolean }) {
-  const { nodes, edges } = useMemo(() => {
-    const built = buildFlowGraph(starChart);
-    return {
-      nodes: built.nodes.map((n) =>
-        n.type === 'rewardNode' ? { ...n, data: { ...n.data, onChange, canModify } } : n
-      ),
-      edges: built.edges,
-    };
-  }, [starChart, onChange, canModify]);
+export function FlowView({ starChart }: { starChart: StarChart }) {
+  const { nodes, edges } = useMemo(() => buildFlowGraph(starChart), [starChart]);
 
   return (
     <div className="flow-view">

@@ -35,7 +35,6 @@ import type {
   QuadrantIn,
   Quadrant,
   Sector,
-  Reward,
   UnitWithRoster,
   Unit,
   GameEvent,
@@ -91,11 +90,6 @@ export const api = {
 
   completeSector: (sectorId: number, payload: { notes?: string | null }): Promise<Sector> =>
     request(`/sectors/${sectorId}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
-  completeReward: (rewardId: number, completed: boolean): Promise<Reward> =>
-    request(`/rewards/${rewardId}/complete`, {
-      method: 'POST',
-      body: JSON.stringify({ completed }),
-    }),
 
   syncRoster: (allyCode: string): Promise<SyncResult> =>
     request(`/sync/roster?ally_code=${encodeURIComponent(allyCode)}`, { method: 'POST' }),

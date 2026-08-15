@@ -277,7 +277,7 @@ function App() {
             {view === 'roadmap' ? (
               <RoadmapView starChart={starChart} units={units} />
             ) : view === 'visualise' ? (
-              <FlowView starChart={starChart} onChange={loadStarChart} canModify={canModify} />
+              <FlowView starChart={starChart} />
             ) : view === 'inventory' ? (
               <InventoryView units={units} />
             ) : (

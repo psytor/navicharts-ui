@@ -1,5 +1,13 @@
 import type { Unit, SectorRequirement, FarmingLocation } from '../types';
 
+// character_unlock/ship_unlock/capital_ship rewards are always a specific
+// catalog unit - the backend derives their `completed` from the roster
+// snapshot (7*, same MAX_STARS threshold used everywhere else for "done
+// farming"), so these get a read-only status indicator, not a checkbox.
+// assault_battle/feature_unlock rewards have no such signal and no manual
+// tracking either - those render with no completion UI at all.
+export const UNIT_REWARD_TYPES = new Set(['character_unlock', 'ship_unlock', 'capital_ship']);
+
 const currencyIcons = import.meta.glob('../assets/currency-icons/*.png', { eager: true, import: 'default' }) as Record<string, string>;
 
 function currencyIcon(name?: string): string | undefined {
