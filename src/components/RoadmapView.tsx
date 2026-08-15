@@ -242,14 +242,19 @@ function PriorityBadge({ rank }: { rank: number }) {
 // Callers always pass entries already filtered down to not-yet-7-star units
 // (see activeGroupEntries below) - a maxed shard farm target is dropped
 // entirely rather than shown dimmed, since the list only grows over time
-// otherwise.
-function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank: number; snapshots: Map<string, RosterSnapshot> }) {
+// otherwise. `rank` is omitted (no PriorityBadge) for sources where "do
+// this one first" doesn't mean anything - Assault Battles, Legendary,
+// Raids, and Conquest are all random-drop rewards, not a deterministic
+// node you farm in order, so a numbered priority badge would be actively
+// misleading there. Energy nodes, Journeys, and Shipments keep it - those
+// really are "farm/buy this one before that one."
+function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?: number; snapshots: Map<string, RosterSnapshot> }) {
   const { unit } = entry.req;
   const stars = snapshots.get(unit.id)?.stars ?? 0;
   const detail = locationDetailLabel(entry.locationDetail);
   return (
     <div className="unit-card">
-      <PriorityBadge rank={rank} />
+      {rank != null && <PriorityBadge rank={rank} />
       {/* Shipment boxes group several currencies under one shop (see
           buildLocations) - the corner pin (same overlay RequirementPortrait
           uses in Visualise) points back to the exact currency this unit
@@ -306,13 +311,17 @@ interface RoadmapSubsectionProps {
   intro: string;
   groups: LocationGroup[];
   snapshots: Map<string, RosterSnapshot>;
+  // Journeys/Shipments really do have a meaningful "do this before that"
+  // order; Assault Battles are random drops, so no rank there - see
+  // ShardUnitCard's docstring.
+  showRank?: boolean;
 }
 
 // A carved-out roadmap subsection grouping several named location-groups
 // under one bracket-panel header (e.g. every individual Journey, or every
 // individual shop/currency fallback) - same visual pattern as Assault
 // Battles, just reused for the other "not a primary energy farm" cases.
-function RoadmapSubsection({ className, headerClassName, color, title, intro, groups, snapshots }: RoadmapSubsectionProps) {
+function RoadmapSubsection({ className, headerClassName, color, title, intro, groups, snapshots, showRank = true }: RoadmapSubsectionProps) {
   if (groups.length === 0) return null;
   return (
     <section className={`${className} bracket-panel`} style={{ '--bracket-color': color } as React.CSSProperties}>
@@ -326,7 +335,7 @@ function RoadmapSubsection({ className, headerClassName, color, title, intro, gr
             </div>
             <div className="location-card-grid">
               {entries.map((entry, i) => (
-                <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={i + 1} snapshots={snapshots} />
+                <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={showRank ? i + 1 : undefined} snapshots={snapshots} />
               ))}
             </div>
           </section>
@@ -399,6 +408,11 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
       <div className="roadmap-grid">
         {[...activeEnergyLocations, ...activeOtherLocations].map(({ key, color, entries }) => {
           const isEnergy = CAMPAIGN_ORDER.includes(key);
+          // Non-energy real locations here are always legendary/raid/
+          // conquest (see buildLocations - "node" locations always land in
+          // one of the 4 CAMPAIGN_ORDER campaigns, scheduled_event/journey
+          // get their own subsections) - all random-drop rewards, no
+          // meaningful priority order.
           return (
             <section className="location-group" key={key} style={{ borderColor: color }}>
               <div className="location-header" style={{ color }}>
@@ -406,7 +420,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
               </div>
               <div className={`location-card-grid ${isEnergy ? 'location-card-grid-energy' : ''}`}>
                 {entries.map((entry, i) => (
-                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={i + 1} snapshots={snapshots} />
+                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={isEnergy ? i + 1 : undefined} snapshots={snapshots} />
                 ))}
               </div>
             </section>
@@ -442,6 +456,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
         intro="Rotating event battles - a bonus shard source on top of each unit's main farm location, only available while the event is live."
         groups={activeAssaultBattles}
         snapshots={snapshots}
+        showRank={false}
       />
 
       <section className="gearing-section bracket-panel" style={{ '--bracket-color': '#c084fc' } as React.CSSProperties}>
