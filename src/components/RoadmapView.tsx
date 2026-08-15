@@ -254,7 +254,7 @@ function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?
   const detail = locationDetailLabel(entry.locationDetail);
   return (
     <div className="unit-card">
-      {rank != null && <PriorityBadge rank={rank} />
+      {rank != null && <PriorityBadge rank={rank} />}
       {/* Shipment boxes group several currencies under one shop (see
           buildLocations) - the corner pin (same overlay RequirementPortrait
           uses in Visualise) points back to the exact currency this unit
