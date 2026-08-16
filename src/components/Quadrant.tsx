@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Card } from 'astrogators-shared-ui';
 import { SectorGroup } from './SectorGroup';
 import type { Quadrant as QuadrantType } from '../types';
 
@@ -35,7 +36,7 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
   }
 
   return (
-    <section className="quadrant bracket-panel">
+    <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--amber)" padding="none" className="quadrant">
       <div className="quadrant-header">
         <button className="quadrant-header-toggle" onClick={() => setOpen(!open)}>
           <span className="quadrant-index">{String(quadrant.order_index + 1).padStart(2, '0')}</span>
@@ -81,6 +82,6 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
           ))}
         </div>
       )}
-    </section>
+    </Card>
   );
 }

@@ -1,3 +1,4 @@
+import { Card } from 'astrogators-shared-ui';
 import {
   UnitPortrait, ENERGY_STYLES, CURRENCY_LABELS, CURRENCY_SHOPS, CurrencyCornerBadge, CAMPAIGN_ENERGY, locationDetailLabel,
 } from './Badge';
@@ -256,7 +257,7 @@ function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?
   const stars = snapshots.get(unit.id)?.stars ?? 0;
   const detail = locationDetailLabel(entry.locationDetail);
   return (
-    <div className="unit-card">
+    <Card chamfered chamferSize="sm" hoverable padding="sm" className="unit-card">
       {rank != null && <PriorityBadge rank={rank} />}
       {/* Shipment boxes group several currencies under one shop (see
           buildLocations) - the corner pin (same overlay RequirementPortrait
@@ -269,7 +270,7 @@ function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?
       <span className="unit-card-name">{unit.name}</span>
       <span className="unit-card-stars">{stars > 0 ? `${stars}★` : '-'}</span>
       {detail && <span className="unit-card-location-detail">{detail}</span>}
-    </div>
+    </Card>
   );
 }
 
@@ -321,18 +322,18 @@ interface RoadmapSubsectionProps {
 }
 
 // A carved-out roadmap subsection grouping several named location-groups
-// under one bracket-panel header (e.g. every individual Journey, or every
+// under one chamfered header card (e.g. every individual Journey, or every
 // individual shop/currency fallback) - same visual pattern as Assault
 // Battles, just reused for the other "not a primary energy farm" cases.
 function RoadmapSubsection({ className, headerClassName, color, title, intro, groups, snapshots, showRank = true }: RoadmapSubsectionProps) {
   if (groups.length === 0) return null;
   return (
-    <section className={`${className} bracket-panel`} style={{ '--bracket-color': color } as React.CSSProperties}>
+    <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor={color} className={className}>
       <div className={`location-header ${headerClassName}`}>{title}</div>
       <p className="roadmap-intro">{intro}</p>
       <div className="roadmap-grid">
         {groups.map(({ key, color: groupColor, entries }) => (
-          <section className="location-group" key={key} style={{ borderColor: groupColor }}>
+          <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={groupColor} className="location-group" key={key}>
             <div className="location-header" style={{ color: groupColor }}>
               {key}
             </div>
@@ -341,10 +342,10 @@ function RoadmapSubsection({ className, headerClassName, color, title, intro, gr
                 <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={showRank ? i + 1 : undefined} snapshots={snapshots} />
               ))}
             </div>
-          </section>
+          </Card>
         ))}
       </div>
-    </section>
+    </Card>
   );
 }
 
@@ -365,7 +366,7 @@ function GearUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank: 
 
   return (
     <div
-      className={`gear-order-card ${owned ? '' : 'gear-order-card--unowned'}`}
+      className={`gear-order-card chamfered-box-sm ${owned ? '' : 'gear-order-card--unowned'}`}
       title={owned ? undefined : 'Not unlocked yet - farm shards to unlock before gearing'}
     >
       <PriorityBadge rank={rank} />
@@ -417,7 +418,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
           // get their own subsections) - all random-drop rewards, no
           // meaningful priority order.
           return (
-            <section className="location-group" key={key} style={{ borderColor: color }}>
+            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className="location-group" key={key}>
               <div className="location-header" style={{ color }}>
                 {key}
               </div>
@@ -426,7 +427,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
                   <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={isEnergy ? i + 1 : undefined} snapshots={snapshots} />
                 ))}
               </div>
-            </section>
+            </Card>
           );
         })}
       </div>
@@ -462,7 +463,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
         showRank={false}
       />
 
-      <section className="gearing-section bracket-panel" style={{ '--bracket-color': '#c084fc' } as React.CSSProperties}>
+      <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="#c084fc" className="gearing-section">
         <div className="location-header gearing-header">Gearing Order</div>
         <p className="roadmap-intro">
           Who to gear up first, in priority order - same quadrant order as above.
@@ -472,7 +473,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
             <GearUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={i + 1} snapshots={snapshots} />
           ))}
         </div>
-      </section>
+      </Card>
     </div>
   );
 }

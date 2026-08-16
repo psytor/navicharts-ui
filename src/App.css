@@ -1,45 +1,6 @@
 .app {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px 16px 80px;
-}
-
-.app-wide {
-  max-width: none;
-}
-
-/* the one signature device: a thin two-corner HUD-style frame, used only on
-   the app's major containers (never nested cards) so it reads as a
-   deliberate motif rather than decoration sprayed everywhere. Color comes
-   from --bracket-color, set per-instance (defaults to the primary accent) so
-   a quadrant's own color can frame its own card. */
-.bracket-panel {
-  position: relative;
-  --bracket-color: var(--amber);
-}
-
-.bracket-panel::before,
-.bracket-panel::after {
-  content: "";
-  position: absolute;
-  width: 14px;
-  height: 14px;
-  pointer-events: none;
-  opacity: 0.85;
-}
-
-.bracket-panel::before {
-  top: 0;
-  left: 0;
-  border-top: 2px solid var(--bracket-color);
-  border-left: 2px solid var(--bracket-color);
-}
-
-.bracket-panel::after {
-  bottom: 0;
-  right: 0;
-  border-bottom: 2px solid var(--bracket-color);
-  border-right: 2px solid var(--bracket-color);
+  padding-top: 24px;
+  padding-bottom: 80px;
 }
 
 .app-header {
@@ -48,13 +9,11 @@
   align-items: flex-start;
   gap: 16px;
   flex-wrap: wrap;
-  border-bottom: 1px solid var(--border);
-  padding: 8px 20px 20px;
   margin-bottom: 20px;
 }
 
 .app-header h1 {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 30px;
   letter-spacing: 0.02em;
@@ -63,7 +22,7 @@
 }
 
 .star-chart-source {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-family: var(--font-mono);
   font-size: 12px;
   letter-spacing: 0.02em;
@@ -95,7 +54,7 @@
 
 .sync-message {
   font-size: 13px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin-bottom: 16px;
 }
 
@@ -113,14 +72,14 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  background: var(--bg-elevated);
+  background: var(--color-background-elevated);
 }
 
 .star-chart-picker-group-label {
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin-top: 6px;
 }
 
@@ -128,7 +87,7 @@
   text-align: left;
   background: none;
   border: none;
-  color: var(--text);
+  color: var(--color-text-primary);
   padding: 6px 8px;
   border-radius: 4px;
 }
@@ -142,7 +101,7 @@
 }
 
 .star-chart-picker-visibility {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 11px;
 }
 
@@ -154,21 +113,21 @@
 .app-error, .app-loading {
   padding: 40px;
   text-align: center;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .view-tabs {
   display: flex;
   gap: 4px;
   margin-bottom: 16px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--color-border);
 }
 
 .view-tabs button {
   background: none;
   border: none;
-  color: var(--text-dim);
-  font-family: var(--font-display);
+  color: var(--color-text-secondary);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.06em;
@@ -178,7 +137,7 @@
 }
 
 .view-tabs button:hover {
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .view-tabs button.active {
@@ -196,11 +155,11 @@
 }
 
 .episode-tabs button {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  background: var(--color-background-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  color: var(--text-dim);
-  font-family: var(--font-display);
+  color: var(--color-text-secondary);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 12px;
   letter-spacing: 0.04em;
@@ -209,11 +168,11 @@
 }
 
 .episode-tabs button:hover {
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .episode-tabs button.active {
-  color: var(--bg);
+  color: var(--color-background);
   background: var(--amber);
   border-color: var(--amber);
 }
@@ -233,18 +192,6 @@
   gap: 6px;
 }
 
-.new-episode-form input {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text);
-  padding: 5px 10px;
-  font-size: 13px;
-}
-
-.new-episode-form input[type="number"] {
-  width: 80px;
-}
 
 .quadrants {
   display: flex;
@@ -253,7 +200,7 @@
 }
 
 .roadmap-intro {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 13px;
   margin: 0 0 16px;
 }
@@ -279,15 +226,10 @@
 .location-group {
   width: fit-content;
   max-width: 260px;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 10px 12px;
 }
 
 .location-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 15px;
   letter-spacing: 0.04em;
@@ -344,8 +286,8 @@
   padding: 0 3px;
   border-radius: 999px;
   background: var(--amber);
-  color: var(--bg);
-  font-family: var(--font-display);
+  color: var(--color-background);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 10px;
   line-height: 16px;
@@ -356,11 +298,12 @@
    portrait+gear-ring+badge rendering the Inventory tab uses (see
    GearRingPortrait), so current gear/relic tier is visible at a glance. */
 .gear-order-card {
-  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 128px;
+  padding: 8px;
+  background: var(--color-surface);
   text-align: center;
 }
 
@@ -376,16 +319,10 @@
 
 .gearing-section {
   margin-top: 20px;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-left-color: #c084fc;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 14px 16px;
 }
 
 .gearing-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.04em;
@@ -400,16 +337,10 @@
 
 .assault-section {
   margin-top: 20px;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-left-color: #e0995a;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 14px 16px;
 }
 
 .assault-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.04em;
@@ -424,16 +355,10 @@
 
 .journey-section {
   margin-top: 20px;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-left-color: #7ed957;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 14px 16px;
 }
 
 .journey-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.04em;
@@ -448,16 +373,10 @@
 
 .shipment-section {
   margin-top: 20px;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-left-color: #8c9bd0;
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 14px 16px;
 }
 
 .shipment-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.04em;
@@ -480,7 +399,7 @@
 .unit-card-name {
   font-size: 11px;
   line-height: 1.25;
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .unit-card-stars {
@@ -491,14 +410,14 @@
 
 .unit-card-location-detail {
   font-size: 10px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin-top: 1px;
   line-height: 1.2;
 }
 
 .unit-card-progress {
   font-size: 10px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin-top: 2px;
   white-space: nowrap;
 }
@@ -507,14 +426,10 @@
 
 .inventory-panel {
   margin-top: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 14px 16px;
 }
 
 .inventory-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 18px;
   letter-spacing: 0.04em;
@@ -689,7 +604,7 @@
   position: absolute;
   font-family: var(--font-mono);
   font-weight: 700;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   text-shadow: 0 0 4px #000, 0 0 4px #000;
   pointer-events: none;
 }
@@ -726,19 +641,15 @@
 .character-card-name {
   font-size: 11px;
   line-height: 1.25;
-  color: var(--text);
+  color: var(--color-text-primary);
   margin-top: 2px;
 }
 
 .character-card--unowned .character-card-name {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .quadrant {
-  border: 1px solid var(--border);
-  border-left-width: 4px;
-  border-radius: 8px;
-  background: var(--bg-elevated);
   overflow: hidden;
 }
 
@@ -758,7 +669,7 @@
   padding: 4px 0;
   background: none;
   border: none;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   text-align: left;
 }
 
@@ -770,8 +681,8 @@
 
 .quadrant-move-btn {
   background: none;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
   border-radius: 4px;
   width: 26px;
   height: 26px;
@@ -787,8 +698,8 @@
 }
 
 .quadrant-move-btn:not(:disabled):hover {
-  color: var(--text-heading);
-  border-color: var(--text-dim);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
 }
 
 .quadrant-edit-btn {
@@ -799,18 +710,18 @@
 .quadrant-delete-btn {
   width: auto;
   padding: 0 8px;
-  color: var(--danger);
+  color: var(--color-error);
 }
 
 .quadrant-delete-btn:hover {
-  color: var(--danger);
-  border-color: var(--danger);
+  color: var(--color-error);
+  border-color: var(--color-error);
 }
 
 .quadrant-delete-btn.confirming {
-  background: var(--danger);
-  color: var(--bg);
-  border-color: var(--danger);
+  background: var(--color-error);
+  color: var(--color-background);
+  border-color: var(--color-error);
   font-weight: 600;
 }
 
@@ -824,12 +735,12 @@
 .quadrant-index {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   flex-shrink: 0;
 }
 
 .quadrant-name {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 16px;
   letter-spacing: 0.03em;
@@ -840,12 +751,12 @@
 .quadrant-progress {
   font-family: var(--font-mono);
   font-size: 13px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .quadrant-toggle {
   font-size: 18px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   width: 20px;
   text-align: center;
 }
@@ -861,8 +772,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border-left: 3px solid #666;
-  padding-left: 10px;
 }
 
 .sector-group-header {
@@ -876,12 +785,12 @@
   font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .sector-group-notes {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin: -4px 0 0;
 }
 
@@ -892,14 +801,7 @@
 }
 
 .sector-card {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 10px 12px;
   background: rgba(0, 0, 0, 0.15);
-}
-
-.sector-card.sector-complete {
-  border-color: var(--met);
 }
 
 .requirements-list {
@@ -910,14 +812,14 @@
 
 .squad-name {
   font-weight: 600;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   font-size: 14px;
   margin-bottom: 2px;
 }
 
 .usable-for {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin: 2px 0 0;
 }
 
@@ -954,7 +856,7 @@
   gap: 8px;
   margin-top: 4px;
   font-size: 13px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .status-dot {
@@ -978,7 +880,7 @@
   font-size: 11px;
   padding: 2px 7px;
   border-radius: 4px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   white-space: nowrap;
 }
 
@@ -990,8 +892,8 @@
 
 .badge-relic {
   background: rgba(217, 113, 92, 0.15);
-  border-color: var(--danger);
-  color: var(--danger);
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .badge-energy {
@@ -1001,7 +903,7 @@
 .badge-energy-readonly {
   background: rgba(232, 200, 90, 0.1);
   border-style: dashed;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .badge-currency {
@@ -1028,13 +930,13 @@
   gap: 6px;
   margin: 0 16px 16px;
   padding-top: 10px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--color-border);
 }
 
 .quadrant-rewards-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.03em;
 }
@@ -1048,18 +950,18 @@
 
 .reward-name {
   font-weight: 500;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
 }
 
 .reward-type {
   font-weight: 400;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 12px;
 }
 
 .reward-unlocked-by {
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-style: italic;
 }
 
@@ -1069,18 +971,18 @@
 
 .notes-text {
   font-size: 13px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-style: italic;
   margin: 0;
   cursor: pointer;
-  border-left: 2px solid var(--border);
+  border-left: 2px solid var(--color-border);
   padding-left: 8px;
 }
 
 .add-note-btn {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 12px;
   padding: 0;
 }
@@ -1102,9 +1004,9 @@
 }
 
 .notes-actions button {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: var(--color-background-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
   border-radius: 6px;
   padding: 4px 10px;
   font-size: 12px;
@@ -1116,25 +1018,16 @@
   justify-content: center;
 }
 
-.add-quadrant-toggle {
-  background: none;
-  border: 1px dashed var(--border);
-  color: var(--text-dim);
-  border-radius: 6px;
-  padding: 10px 20px;
-  width: 100%;
-}
-
 .add-quadrant-panel {
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
-  background: var(--bg-elevated);
+  background: var(--color-background-elevated);
   padding: 16px;
   width: 100%;
 }
 
 .add-quadrant-error {
-  color: var(--danger);
+  color: var(--color-error);
   font-size: 13px;
 }
 
@@ -1142,22 +1035,6 @@
   display: flex;
   gap: 8px;
   margin-top: 10px;
-}
-
-.add-quadrant-actions button:first-child {
-  background: #5865b8;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
-}
-
-.add-quadrant-actions button:last-child {
-  background: none;
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 6px;
-  padding: 6px 14px;
 }
 
 /* Quadrant builder form */
@@ -1177,12 +1054,12 @@
   margin-bottom: 14px;
 }
 
-.quadrant-builder-header input {
+.quadrant-builder-header-input {
   flex-grow: 1;
 }
 
 .sector-editor {
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 12px;
@@ -1207,7 +1084,7 @@
 
 .sector-editor-title {
   font-weight: 600;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   font-size: 13px;
 }
 
@@ -1218,8 +1095,8 @@
 
 .sector-editor-controls button {
   background: none;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
   border-radius: 4px;
   padding: 2px 8px;
   font-size: 12px;
@@ -1258,7 +1135,7 @@
 
 .req-location-hint {
   font-size: 11px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   max-width: 220px;
 }
 
@@ -1268,7 +1145,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   background: rgba(0, 0, 0, 0.15);
   border-radius: 6px;
   padding: 4px 8px;
@@ -1307,7 +1184,7 @@
 .req-remove {
   background: none;
   border: none;
-  color: var(--danger);
+  color: var(--color-error);
   font-size: 16px;
   padding: 0 4px;
   margin-left: auto;
@@ -1317,7 +1194,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  border-top: 1px dashed var(--border);
+  border-top: 1px dashed var(--color-border);
   padding-top: 8px;
   margin-top: 4px;
 }
@@ -1325,7 +1202,7 @@
 .unlocks-label {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .reward-editor {
@@ -1339,12 +1216,6 @@
 
 .sector-add-btn {
   align-self: flex-start;
-  background: none;
-  border: 1px dashed var(--border);
-  color: var(--text-dim);
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
 }
 
 .add-sector-buttons {
@@ -1353,24 +1224,14 @@
   margin-bottom: 12px;
 }
 
-.add-sector-buttons button {
-  background: none;
-  border: 1px dashed var(--border);
-  color: var(--text-dim);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  flex-grow: 1;
-}
-
 .downstream-picker {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: var(--text-dim);
-  border-top: 1px solid var(--border);
+  color: var(--color-text-secondary);
+  border-top: 1px solid var(--color-border);
   padding-top: 8px;
 }
 
@@ -1395,7 +1256,7 @@
 .downstream-quadrant-toggle {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -1403,7 +1264,7 @@
 }
 
 .downstream-quadrant-toggle:hover {
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .downstream-option-cross {
@@ -1429,8 +1290,8 @@
   list-style: none;
   margin: 2px 0 0;
   padding: 4px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  background: var(--color-background-elevated);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   width: 240px;
   max-height: 260px;
@@ -1459,7 +1320,7 @@
 
 .unit-picker-type {
   margin-left: auto;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 11px;
 }
 
@@ -1479,16 +1340,12 @@
 .unit-picker-clear {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 11px;
   text-decoration: underline;
 }
 
 /* ---- Visualise (flowchart) tab ---- */
-
-.app-wide {
-  max-width: none;
-}
 
 .flow-view {
   display: flex;
@@ -1500,22 +1357,20 @@
   flex: 1;
   height: 75vh;
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
   overflow: hidden;
 }
 
 .flow-view .react-flow {
-  --xy-background-color: var(--bg);
-  --xy-node-background-color: var(--bg-elevated);
-  --xy-node-border: 1px solid var(--border);
+  --xy-background-color: var(--color-background);
+  --xy-node-background-color: var(--color-background-elevated);
+  --xy-node-border: 1px solid var(--color-border);
   --xy-node-border-radius: 8px;
-  --xy-node-color: var(--text);
-  --xy-edge-stroke: var(--text-dim);
-  --xy-controls-button-background-color: var(--bg-elevated);
-  --xy-controls-button-color: var(--text);
-  --xy-controls-button-border-color: var(--border);
-  --xy-minimap-background-color: var(--bg-elevated);
+  --xy-node-color: var(--color-text-primary);
+  --xy-edge-stroke: var(--color-text-secondary);
+  --xy-controls-button-background-color: var(--color-background-elevated);
+  --xy-controls-button-color: var(--color-text-primary);
+  --xy-controls-button-border-color: var(--color-border);
+  --xy-minimap-background-color: var(--color-background-elevated);
   --xy-minimap-mask-background-color: rgba(0, 0, 0, 0.5);
 }
 
@@ -1541,10 +1396,6 @@
   flex-shrink: 0;
   max-height: 75vh;
   overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 12px;
 }
 
 .squad-pool-header {
@@ -1557,32 +1408,26 @@
    Visualise (see SquadList in SquadBuilder.jsx). */
 .squad-builder-section {
   margin-top: 20px;
-  border: 1px solid var(--border);
-  border-left-width: 3px;
-  border-left-color: var(--cyan);
-  border-radius: 8px;
-  background: var(--bg-elevated);
-  padding: 14px 16px;
 }
 
 .squad-empty-hint {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 13px;
 }
 
 .squad-type-group + .squad-type-group {
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px dashed var(--border);
+  border-top: 1px dashed var(--color-border);
 }
 
 .squad-type-header {
-  font-family: var(--font-display);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 13px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin-bottom: 8px;
 }
 
@@ -1593,11 +1438,6 @@
   margin-bottom: 10px;
 }
 
-.squad-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px;
-}
 
 .squad-card-header {
   display: flex;
@@ -1609,7 +1449,7 @@
 
 .squad-card-name {
   font-weight: 600;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
 }
 
 .squad-purpose-badge {
@@ -1630,8 +1470,8 @@
 
 .squadcard-action-btn {
   background: none;
-  border: 1px solid var(--border);
-  color: var(--text-dim);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
   border-radius: 4px;
   padding: 0 8px;
   height: 26px;
@@ -1639,29 +1479,29 @@
 }
 
 .squadcard-action-btn:hover {
-  color: var(--text-heading);
-  border-color: var(--text-dim);
+  color: var(--color-text-primary);
+  border-color: var(--color-text-secondary);
 }
 
 .squadcard-delete-btn {
-  color: var(--danger);
+  color: var(--color-error);
 }
 
 .squadcard-delete-btn:hover {
-  color: var(--danger);
-  border-color: var(--danger);
+  color: var(--color-error);
+  border-color: var(--color-error);
 }
 
 .squadcard-delete-btn.confirming {
-  background: var(--danger);
-  color: var(--bg);
-  border-color: var(--danger);
+  background: var(--color-error);
+  color: var(--color-background);
+  border-color: var(--color-error);
   font-weight: 600;
 }
 
 .squad-card-notes {
   font-size: 12px;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   margin: 0 0 6px;
 }
 
@@ -1681,7 +1521,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--color-border);
   border-radius: 8px;
   padding: 8px 4px 4px;
   text-align: center;
@@ -1689,7 +1529,7 @@
 
 .squad-slot-filled {
   border-style: solid;
-  background: var(--bg);
+  background: var(--color-background);
 }
 
 .squad-slot-special {
@@ -1705,12 +1545,12 @@
   top: -9px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-elevated);
+  background: var(--color-background-elevated);
   padding: 0 4px;
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .squad-slot-special .squad-slot-label {
@@ -1718,7 +1558,7 @@
 }
 
 .squad-slot-placeholder {
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
   font-size: 11px;
   padding: 12px 2px;
 }
@@ -1731,15 +1571,17 @@
   height: 16px;
   line-height: 14px;
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--danger);
+  border: 1px solid var(--color-border);
+  background: var(--color-background-elevated);
+  color: var(--color-error);
   font-size: 11px;
   padding: 0;
 }
 
 .squad-pool-card {
   cursor: grab;
+  padding: 8px;
+  background: var(--color-surface);
 }
 
 .squad-pool-card:active {
@@ -1754,8 +1596,8 @@
   height: 16px;
   border-radius: 50%;
   background: var(--amber);
-  color: var(--bg);
-  font-family: var(--font-display);
+  color: var(--color-background);
+  font-family: var(--font-heading);
   font-weight: 700;
   font-size: 10px;
   line-height: 16px;
@@ -1787,10 +1629,10 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: var(--bg);
+  background: var(--color-background);
   padding: 2px 10px;
   border-radius: 4px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
 }
 
 .quadrant-group-node-label .quadrant-dot {
@@ -1828,10 +1670,10 @@
   display: flex;
   align-items: center;
   gap: 5px;
-  background: var(--bg);
+  background: var(--color-background);
   padding: 1px 8px;
   border-radius: 4px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--color-border);
 }
 
 .sector-group-node-label .quadrant-dot {
@@ -1843,26 +1685,20 @@
   font-size: 11px;
   letter-spacing: 0.02em;
   white-space: nowrap;
-  color: var(--text);
+  color: var(--color-text-primary);
 }
 
 .system-flow-node {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg-elevated);
+  background: var(--color-background-elevated);
   padding: 6px 8px;
   font-size: 11px;
-}
-
-.system-flow-node.system-flow-node-complete {
-  border-color: var(--met);
 }
 
 .system-flow-node-header {
   font-weight: 600;
   font-size: 12px;
   margin-bottom: 4px;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1934,7 +1770,7 @@
 }
 
 .req-corner-badge--relic {
-  background: var(--danger);
+  background: var(--color-error);
   color: #2a1512;
 }
 
@@ -1980,8 +1816,8 @@
   width: 140px;
   height: 70px;
   clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  background: var(--bg-elevated);
-  border: 2px solid var(--border);
+  background: var(--color-background-elevated);
+  border: 2px solid var(--color-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1998,7 +1834,7 @@
 
 .reward-flow-node-complete .reward-flow-node-hex {
   border-color: var(--met);
-  background: color-mix(in srgb, var(--met) 15%, var(--bg-elevated));
+  background: color-mix(in srgb, var(--met) 15%, var(--color-background-elevated));
 }
 
 .reward-flow-node-saving {
@@ -2008,7 +1844,7 @@
 .reward-flow-node-name {
   font-size: 12px;
   font-weight: 600;
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   line-height: 1.2;
 }
 
@@ -2017,7 +1853,7 @@
   font-size: 9px;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--text-dim);
+  color: var(--color-text-secondary);
 }
 
 .reward-flow-node-banner {
@@ -2026,8 +1862,8 @@
   height: 160px;
   overflow: hidden;
   border-radius: 6px;
-  border: 2px solid var(--border);
-  background: var(--bg-elevated);
+  border: 2px solid var(--color-border);
+  background: var(--color-background-elevated);
 }
 
 .reward-flow-node-banner-img {
@@ -2044,7 +1880,7 @@
   bottom: 0;
   padding: 6px 8px;
   background: linear-gradient(to top, rgba(10, 10, 14, 0.92), rgba(10, 10, 14, 0));
-  color: var(--text-heading);
+  color: var(--color-text-primary);
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;

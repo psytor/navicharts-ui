@@ -1,3 +1,4 @@
+import { Card } from 'astrogators-shared-ui';
 import { CharacterCard } from './CharacterCard';
 import type { UnitWithRoster } from '../types';
 
@@ -19,13 +20,13 @@ export function InventoryView({ units }: { units: UnitWithRoster[] }) {
   const characters = units.filter((u) => u.unit_type === 'character').sort(byGpThenName);
 
   return (
-    <section className="bracket-panel inventory-panel" style={{ '--bracket-color': 'var(--cyan)' } as React.CSSProperties}>
+    <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="inventory-panel">
       <h2 className="inventory-header">Inventory</h2>
       <div className="inventory-grid">
         {characters.map((u) => (
           <CharacterCard key={u.id} unit={u} />
         ))}
       </div>
-    </section>
+    </Card>
   );
 }

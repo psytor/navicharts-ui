@@ -38,7 +38,15 @@ function requirementTitle(req: SystemRequirement): string {
 export function SystemFlowNode({ data }: { data: { system: System } }) {
   const { system } = data;
   return (
-    <div className={`system-flow-node ${system.status ? 'system-flow-node-complete' : ''}`}>
+    <div className={`system-flow-node chamfered-box-sm ${system.status ? 'system-flow-node-complete' : ''}`}>
+      {system.status && (
+        <>
+          <div className="chamfered-diagonal-border chamfered-diagonal-tl" style={{ color: 'var(--met)' }} />
+          <div className="chamfered-diagonal-border chamfered-diagonal-tr" style={{ color: 'var(--met)' }} />
+          <div className="chamfered-diagonal-border chamfered-diagonal-bl" style={{ color: 'var(--met)' }} />
+          <div className="chamfered-diagonal-border chamfered-diagonal-br" style={{ color: 'var(--met)' }} />
+        </>
+      )}
       <Handle type="target" position={Position.Top} id="in" />
       {system.name && <div className="system-flow-node-header">{system.name}</div>}
       <div className="system-flow-node-reqs">

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { NavBar, useAuth } from 'astrogators-shared-ui';
+import { NavBar, Container, Footer, Card, useAuth } from 'astrogators-shared-ui';
 import { api } from './api';
 import { Quadrant } from './components/Quadrant';
 import { QuadrantBuilder } from './components/QuadrantBuilder';
@@ -174,19 +174,19 @@ function App() {
   return (
     <>
       <NavBar appName="Navicharts" appHref="/navicharts/" showAllyCode rightExtras={rightExtras} />
-      <div className={`app ${view === 'visualise' || view === 'inventory' ? 'app-wide' : ''}`}>
+      <Container maxWidth={view === 'visualise' || view === 'inventory' ? 'full' : 'lg'} className="app">
         {error ? (
           <div className="app-error">{error}</div>
         ) : !starChart ? (
           <div className="app-loading">Loading...</div>
         ) : (
           <>
-            <header className="app-header bracket-panel">
+            <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--amber)" padding="md" className="app-header">
               <div>
                 <h1>{starChart.name}</h1>
                 {starChart.source && <p className="star-chart-source">{starChart.source}</p>}
               </div>
-            </header>
+            </Card>
             {syncMessage && <div className="sync-message">{syncMessage}</div>}
 
             <nav className="episode-tabs">
@@ -277,7 +277,8 @@ function App() {
             )}
           </>
         )}
-      </div>
+      </Container>
+      <Footer />
     </>
   );
 }

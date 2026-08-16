@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Card } from 'astrogators-shared-ui';
 import { SystemCard, WaypointRow } from './SystemCard';
 import { api } from '../api';
 import type { Sector } from '../types';
@@ -30,7 +31,7 @@ export function SectorGroup({ sector, onChange, canModify }: SectorGroupProps) {
   }
 
   return (
-    <div className="sector-group" style={{ borderLeftColor: sector.color || '#666' }}>
+    <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={sector.color || '#666'} className="sector-group">
       <div className="sector-group-header">
         <span className="quadrant-dot" style={{ background: sector.color || '#666' }} />
         {editingName ? (
@@ -67,6 +68,6 @@ export function SectorGroup({ sector, onChange, canModify }: SectorGroupProps) {
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }

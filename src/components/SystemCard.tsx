@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Card } from 'astrogators-shared-ui';
 import {
   TierBadge, EnergyBadge, CurrencyBadge, OmicronBadge, LstBadge, StatusDot, UnitPortrait,
   derivedEnergyTypes, UNIT_WAYPOINT_TYPES,
@@ -61,7 +62,14 @@ export function SystemCard({ system, onChange, canModify }: { system: System; on
   }
 
   return (
-    <div className={`sector-card ${system.status ? 'sector-complete' : ''}`}>
+    <Card
+      chamfered
+      chamferSize="sm"
+      padding="md"
+      showDiagonalBorders={system.status}
+      diagonalBorderColor={system.status ? 'var(--color-success)' : undefined}
+      className={`sector-card ${system.status ? 'sector-complete' : ''}`}
+    >
       <div className="requirements-list">
         {system.name && <div className="squad-name">{system.name}</div>}
         {system.requirements.map((req) => (
@@ -104,6 +112,6 @@ export function SystemCard({ system, onChange, canModify }: { system: System; on
         </div>
       )}
       {!canModify && system.notes && <div className="sector-notes"><p className="notes-text">{system.notes}</p></div>}
-    </div>
+    </Card>
   );
 }

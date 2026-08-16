@@ -35,7 +35,11 @@ export function FlowView({ starChart }: { starChart: StarChart }) {
 
   return (
     <div className="flow-view">
-      <div className="flow-view-canvas bracket-panel">
+      <div className="flow-view-canvas chamfered-box-lg">
+        <div className="chamfered-diagonal-border chamfered-diagonal-tl" style={{ color: 'var(--amber)' }} />
+        <div className="chamfered-diagonal-border chamfered-diagonal-tr" style={{ color: 'var(--amber)' }} />
+        <div className="chamfered-diagonal-border chamfered-diagonal-bl" style={{ color: 'var(--amber)' }} />
+        <div className="chamfered-diagonal-border chamfered-diagonal-br" style={{ color: 'var(--amber)' }} />
         <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView minZoom={0.1}>
           <Controls />
           <MiniMap pannable zoomable nodeColor={minimapNodeColor} nodeStrokeWidth={0} maskColor="rgba(0, 0, 0, 0.55)" />

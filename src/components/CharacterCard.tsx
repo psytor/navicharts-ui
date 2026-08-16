@@ -1,3 +1,4 @@
+import { Card } from 'astrogators-shared-ui';
 import { UnitPortrait } from './Badge';
 import type { Unit, UnitWithRoster, RosterSnapshot } from '../types';
 
@@ -155,7 +156,7 @@ export function CharacterCard({ unit }: { unit: UnitWithRoster }) {
   const stars = snap?.stars ?? 0;
 
   return (
-    <div className={`character-card ${owned ? '' : 'character-card--unowned'}`}>
+    <Card chamfered chamferSize="sm" hoverable padding="sm" className={`character-card ${owned ? '' : 'character-card--unowned'}`}>
       <GearRingPortrait unit={unit} snapshot={snap} />
       <div className="character-card-stars">
         {Array.from({ length: 7 }, (_, i) => (
@@ -163,6 +164,6 @@ export function CharacterCard({ unit }: { unit: UnitWithRoster }) {
         ))}
       </div>
       <span className="character-card-name">{unit.name}</span>
-    </div>
+    </Card>
   );
 }

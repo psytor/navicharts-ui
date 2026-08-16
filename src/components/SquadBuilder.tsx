@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from 'astrogators-shared-ui';
+import { Button, Card, Input, Select, useAuth } from 'astrogators-shared-ui';
 import { api } from '../api';
 import { UnitPortrait } from './Badge';
 import type { Squad, SquadMember, SquadMemberIn, Unit } from '../types';
@@ -64,11 +64,11 @@ function SquadSlot({ label, unit, isSpecial, onDrop, onClear }: SquadSlotProps) 
     >
       <span className="squad-slot-label">{label}</span>
       {unit ? (
-        <div className="unit-card">
+        <Card chamfered chamferSize="sm" padding="sm" className="unit-card">
           <UnitPortrait unit={unit} />
           <span className="unit-card-name">{unit.name}</span>
           <button type="button" className="squad-slot-clear" title="Remove" onClick={onClear}>×</button>
-        </div>
+        </Card>
       ) : (
         <div className="squad-slot-placeholder">Drag unit here</div>
       )}
@@ -163,17 +163,18 @@ function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps
     <div className="add-quadrant-panel squad-form">
       {isEditing && <div className="quadrant-builder-edit-label">Editing {cfg.label.toLowerCase()}</div>}
       <div className="quadrant-builder-header">
-        <input
+        <Input
           type="text"
           placeholder={`Squad name (e.g. ${type === 'ship' ? 'Home Fleet' : 'Imperial Troopers'})`}
           value={name}
           onChange={(e) => setName(e.target.value)}
+          className="quadrant-builder-header-input"
         />
-        <select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
+        <Select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
           {SQUAD_PURPOSES.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       <div className="squad-slots">
@@ -200,7 +201,7 @@ function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps
         {availablePool.map((u) => (
           <div
             key={u.id}
-            className="unit-card squad-pool-card"
+            className="unit-card squad-pool-card chamfered-box-sm"
             draggable
             onDragStart={(e) => e.dataTransfer.setData('text/plain', u.id)}
           >
@@ -220,10 +221,10 @@ function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps
       {error && <p className="add-quadrant-error">{error}</p>}
 
       <div className="add-quadrant-actions">
-        <button onClick={submit} disabled={saving || !name.trim()}>
+        <Button variant="primary" onClick={submit} disabled={saving || !name.trim()}>
           {saving ? 'Saving...' : isEditing ? 'Save changes' : 'Save squad'}
-        </button>
-        <button onClick={onCancel} disabled={saving}>Cancel</button>
+        </Button>
+        <Button variant="outline" onClick={onCancel} disabled={saving}>Cancel</Button>
       </div>
     </div>
   );
@@ -254,7 +255,7 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
   const sortedMembers = [...squad.members].sort((a, b) => (b.is_leader ? 1 : 0) - (a.is_leader ? 1 : 0));
 
   return (
-    <div className="squad-card">
+    <Card chamfered chamferSize="sm" padding="sm" className="squad-card">
       <div className="squad-card-header">
         <span className="squad-card-name">{squad.name}</span>
         <span className="squad-purpose-badge">{squad.purpose}</span>
@@ -280,16 +281,22 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
       {squad.notes && <p className="squad-card-notes">{squad.notes}</p>}
       <div className="location-card-grid">
         {sortedMembers.map((m: SquadMember) => (
-          <div key={m.id} className={`unit-card${m.is_leader ? ' squad-member-special' : ''}`}>
+          <Card
+            key={m.id}
+            chamfered
+            chamferSize="sm"
+            padding="sm"
+            className={`unit-card${m.is_leader ? ' squad-member-special' : ''}`}
+          >
             <UnitPortrait unit={m.unit} />
             {m.is_leader && (
               <span className="squad-special-badge" title={cfg.specialLabel}>{cfg.badge}</span>
             )}
             <span className="unit-card-name">{m.unit.name}</span>
-          </div>
+          </Card>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -311,7 +318,7 @@ export function SquadList() {
   }, [isAuthenticated]);
 
   return (
-    <aside className="squad-loadout-panel bracket-panel" style={{ '--bracket-color': 'var(--cyan)' } as React.CSSProperties}>
+    <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-loadout-panel">
       <div className="location-header">Squads</div>
       {!isAuthenticated ? (
         <p className="squad-empty-hint">Log in to see your squads.</p>
@@ -337,7 +344,7 @@ export function SquadList() {
           </div>
         );
       })}
-    </aside>
+    </Card>
   );
 }
 
@@ -377,15 +384,15 @@ export function SquadBuilder() {
 
   if (!isAuthenticated) {
     return (
-      <section className="squad-builder-section">
+      <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-builder-section">
         <div className="location-header">Squads</div>
         <p className="squad-empty-hint">Log in to build squads.</p>
-      </section>
+      </Card>
     );
   }
 
   return (
-    <section className="squad-builder-section">
+    <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-builder-section">
       <div className="location-header">Squads</div>
 
       {error && <p className="add-quadrant-error">{error}</p>}
@@ -420,12 +427,12 @@ export function SquadBuilder() {
           {creatingType === type ? (
             <SquadForm squadType={type} pool={pool} onSaved={handleSaved} onCancel={() => setCreatingType(null)} />
           ) : (
-            <button className="add-quadrant-toggle" onClick={() => setCreatingType(type)}>
+            <Button variant="outline" fullWidth className="add-quadrant-toggle" onClick={() => setCreatingType(type)}>
               + New {cfg.label}
-            </button>
+            </Button>
           )}
         </div>
       ))}
-    </section>
+    </Card>
   );
 }
