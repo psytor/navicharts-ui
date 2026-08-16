@@ -678,7 +678,7 @@ export function layoutGraph({ quadrants, prerequisiteEdges, unlockEdges }: Deriv
     pathOptions: { borderRadius: 12 },
     animated: false,
     zIndex: 0,
-    style: { stroke: 'var(--text-dim)' },
+    style: { stroke: 'var(--color-text-secondary)' },
   }));
 
   // Prerequisite edges (especially cross-sector/cross-quadrant ones)

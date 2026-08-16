@@ -1353,6 +1353,17 @@
   border: 1px solid var(--color-primary);
 }
 
+/* astrogators-shared-ui's global reset sets `svg { max-width: 100%; }` for
+   responsive images - reasonable everywhere else, but React Flow's own
+   internal edge/marker/minimap SVGs were never designed to have any
+   max-width at all (they size themselves via plain absolute-positioning
+   fill, see @xyflow/react's own style.css). Colliding with the reset
+   collapses those SVGs to 0 width, which silently drops every edge line
+   with no console error - re-exempt everything React Flow owns. */
+.flow-view .react-flow svg {
+  max-width: none;
+}
+
 .flow-view .react-flow {
   --xy-background-color: var(--color-background);
   --xy-node-background-color: var(--color-background-elevated);
