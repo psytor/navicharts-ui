@@ -181,7 +181,7 @@ function App() {
           <div className="app-loading">Loading...</div>
         ) : (
           <>
-            <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--amber)" padding="md" className="app-header">
+            <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--color-primary)" padding="md" className="app-header">
               <div>
                 <h1>{starChart.name}</h1>
                 {starChart.source && <p className="star-chart-source">{starChart.source}</p>}
