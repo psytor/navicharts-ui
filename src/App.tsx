@@ -241,12 +241,13 @@ function App() {
                         editingQuadrant={quadrant}
                         onEdited={finishEditingQuadrant}
                         onCancelEdit={() => setEditingQuadrantId(null)}
-                        allQuadrants={starChart.quadrants}
                       />
                     ) : (
                       <div id={`quadrant-${quadrant.id}`} key={quadrant.id}>
                         <Quadrant
                           quadrant={quadrant}
+                          starChartId={starChart.id}
+                          allQuadrants={starChart.quadrants}
                           onChange={loadStarChart}
                           onMoveUp={() => moveQuadrant(quadrant.id, -1)}
                           onMoveDown={() => moveQuadrant(quadrant.id, 1)}
@@ -267,7 +268,6 @@ function App() {
                       starChartId={starChart.id}
                       nextOrderIndex={starChart.quadrants.length}
                       onAdded={loadStarChart}
-                      allQuadrants={starChart.quadrants}
                     />
                   </div>
                 )}

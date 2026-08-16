@@ -770,6 +770,7 @@
 }
 
 .sector-group-name {
+  flex: 1;
   margin: 0;
   font-size: 13px;
   text-transform: uppercase;

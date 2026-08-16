@@ -1,32 +1,34 @@
 import { useState } from 'react';
 import { Card } from 'astrogators-shared-ui';
 import { SystemCard, WaypointRow } from './SystemCard';
-import { api } from '../api';
 import type { Sector } from '../types';
 
 interface SectorGroupProps {
   sector: Sector;
   onChange: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+  isFirst: boolean;
+  isLast: boolean;
   canModify: boolean;
 }
 
 // One Sector container - a named grouping within a Quadrant (e.g. "Start
 // Here") holding the Systems (squads to build) and Waypoints (rewards) that
-// belong together. Waypoints render here, scoped to their owning Sector,
-// rather than flattened across the whole Quadrant the way Rewards used to be.
-export function SectorGroup({ sector, onChange, canModify }: SectorGroupProps) {
-  const [name, setName] = useState(sector.name);
-  const [editingName, setEditingName] = useState(false);
-  const [saving, setSaving] = useState(false);
+// belong together. Move/Edit/Delete live on this header, same pattern as
+// Quadrant's own header - editing opens SectorEditorPanel for just this
+// Sector, never the whole Quadrant (see App.tsx/Quadrant.tsx).
+export function SectorGroup({ sector, onChange, onMoveUp, onMoveDown, onDelete, onEdit, isFirst, isLast, canModify }: SectorGroupProps) {
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  async function saveName() {
-    setSaving(true);
-    try {
-      await api.updateSector(sector.id, { name });
-      setEditingName(false);
-      onChange();
-    } finally {
-      setSaving(false);
+  function handleDeleteClick() {
+    if (confirmingDelete) {
+      onDelete();
+    } else {
+      setConfirmingDelete(true);
+      setTimeout(() => setConfirmingDelete(false), 3000);
     }
   }
 
@@ -34,22 +36,20 @@ export function SectorGroup({ sector, onChange, canModify }: SectorGroupProps) {
     <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={sector.color || '#666'} className="sector-group">
       <div className="sector-group-header">
         <span className="quadrant-dot" style={{ background: sector.color || '#666' }} />
-        {editingName ? (
-          <div className="notes-edit">
-            <input type="text" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-            <div className="notes-actions">
-              <button onClick={saveName} disabled={saving || !name.trim()}>Save</button>
-              <button onClick={() => { setName(sector.name); setEditingName(false); }} disabled={saving}>Cancel</button>
-            </div>
+        <h3 className="sector-group-name">{sector.name}</h3>
+        {canModify && (
+          <div className="quadrant-move-controls">
+            <button className="quadrant-move-btn" title="Move up" disabled={isFirst} onClick={onMoveUp}>↑</button>
+            <button className="quadrant-move-btn" title="Move down" disabled={isLast} onClick={onMoveDown}>↓</button>
+            <button className="quadrant-move-btn quadrant-edit-btn" title="Edit sector" onClick={onEdit}>Edit</button>
+            <button
+              className={`quadrant-move-btn quadrant-delete-btn ${confirmingDelete ? 'confirming' : ''}`}
+              title="Delete sector"
+              onClick={handleDeleteClick}
+            >
+              {confirmingDelete ? 'Confirm?' : '×'}
+            </button>
           </div>
-        ) : (
-          <h3
-            className="sector-group-name"
-            onClick={canModify ? () => setEditingName(true) : undefined}
-            title={canModify ? 'Click to rename' : undefined}
-          >
-            {sector.name}
-          </h3>
         )}
       </div>
       {sector.notes && <p className="sector-group-notes">{sector.notes}</p>}

@@ -9,24 +9,24 @@ import {
 
 interface SectorEditorProps {
   sector: DraftSector;
-  sectorIndex: number;
   allSystems: FlatSystemEntry[];
   allWaypoints: FlatWaypointEntry[];
   otherQuadrants: Quadrant[];
   units: Unit[];
   events: GameEvent[];
   onChange: (sector: DraftSector) => void;
-  onRemove: () => void;
-  onMove: (direction: number) => void;
-  isFirst: boolean;
-  isLast: boolean;
 }
 
-// One Sector container's editor - name/notes, its Systems (squads to build),
-// and its Waypoints (rewards). A System's "Requires"/"Unlocks" pickers
-// (see SystemEditor) reach across every Sector in the quadrant, not just
-// this one, since a System's targets aren't necessarily in its own Sector.
-export function SectorEditor({ sector, sectorIndex, allSystems, allWaypoints, otherQuadrants, units, events, onChange, onRemove, onMove, isFirst, isLast }: SectorEditorProps) {
+// One Sector's own editor - name/color/notes, its Systems (squads to build),
+// and its Waypoints (rewards). A System's "Feeds into"/"Unlocks" pickers
+// (see SystemEditor) can reach systems/waypoints outside this Sector too
+// (sibling Sectors in the same Quadrant, or other Quadrants) via
+// otherQuadrants - see SectorEditorPanel, which builds allSystems/
+// allWaypoints/otherQuadrants scoped to just this Sector's editing session.
+// Standalone now (SectorEditorPanel owns fetch/save/cancel) - move/remove
+// live on the read-only SectorGroup card instead, same as Quadrant's own
+// move/delete controls living on its card, not inside QuadrantBuilder.
+export function SectorEditor({ sector, allSystems, allWaypoints, otherQuadrants, units, events, onChange }: SectorEditorProps) {
   function updateSystem(i: number, patch: DraftSystem) {
     const systems = sector.systems.map((s, idx) => (idx === i ? patch : s));
     onChange({ ...sector, systems });
@@ -58,15 +58,6 @@ export function SectorEditor({ sector, sectorIndex, allSystems, allWaypoints, ot
 
   return (
     <div className="sector-editor sector-editor-container">
-      <div className="sector-editor-header">
-        <span className="sector-editor-title">Sector {sectorIndex + 1}</span>
-        <div className="sector-editor-controls">
-          <button type="button" onClick={() => onMove(-1)} disabled={isFirst}>↑</button>
-          <button type="button" onClick={() => onMove(1)} disabled={isLast}>↓</button>
-          <button type="button" onClick={onRemove}>Remove sector</button>
-        </div>
-      </div>
-
       <div className="quadrant-builder-header">
         <Input
           type="text"

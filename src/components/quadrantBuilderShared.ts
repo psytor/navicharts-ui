@@ -1,4 +1,4 @@
-import type { Unit, GameEvent } from '../types';
+import type { Unit, GameEvent, Sector } from '../types';
 
 export const SECTOR_COLORS = ['purple', 'cyan', 'gold', 'green', 'red', 'blue', 'orange', 'pink', 'teal'];
 export const ENERGY_OPTIONS = ['', 'normal', 'cantina', 'ship'];
@@ -131,6 +131,48 @@ export function emptySector(): DraftSector {
     notes: '',
     systems: [emptySystem()],
     waypoints: [],
+  };
+}
+
+// Builds the draft form for editing ONE Sector standalone - same shape as
+// quadrantToFormState's per-sector mapping (QuadrantBuilder.tsx), but the
+// "same payload, use an index" vs "already exists elsewhere, use its
+// absolute id" split is scoped to THIS Sector's own Systems/Waypoints now,
+// not the whole Quadrant's - see SectorIn.downstream_indices/
+// unlock_waypoint_indices on the backend for why that boundary matters.
+export function sectorToFormState(sector: Sector): DraftSector {
+  const systemIds = new Set(sector.systems.map((s) => s.id));
+  const waypointIds = new Set(sector.waypoints.map((w) => w.id));
+
+  return {
+    _key: sector.id,
+    name: sector.name,
+    color: sector.color || SECTOR_COLORS[0],
+    notes: sector.notes || '',
+    systems: sector.systems.map((s) => ({
+      _key: s.id,
+      notes: s.notes || '',
+      name: s.name || '',
+      usable_for: s.usable_for || '',
+      requirements: s.requirements.map((r) => ({
+        unit: r.unit,
+        gear_tier: r.gear_tier != null ? String(r.gear_tier) : '',
+        relic_tier: r.relic_tier != null ? String(r.relic_tier) : '',
+        target_stars: r.target_stars != null ? String(r.target_stars) : '',
+        energy_type: r.energy_type ?? '',
+        currency_types: r.currency_types || [],
+        energy_locations: r.energy_locations ?? null,
+        lst_tiers: r.lst_tiers || [],
+        omicron_ability_ids: r.omicron_ability_ids || [],
+      })),
+      unlock_keys: s.unlocks.filter((w) => waypointIds.has(w.id)).map((w) => w.id),
+      unlock_waypoint_ids: s.unlocks.filter((w) => !waypointIds.has(w.id)).map((w) => w.id),
+      downstream_keys: s.enables.filter((e) => systemIds.has(e.id)).map((e) => e.id),
+      downstream_system_ids: s.enables.filter((e) => !systemIds.has(e.id)).map((e) => e.id),
+    })),
+    waypoints: sector.waypoints.map((w) => ({
+      _key: w.id, name: w.name, waypoint_type: w.waypoint_type, unit: w.unit || null, event: w.event || null,
+    })),
   };
 }
 

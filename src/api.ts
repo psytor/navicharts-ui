@@ -35,6 +35,7 @@ import type {
   QuadrantIn,
   Quadrant,
   Sector,
+  SectorIn,
   System,
   UnitWithRoster,
   Unit,
@@ -93,6 +94,25 @@ export const api = {
     request(`/systems/${systemId}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
   updateSector: (sectorId: number, payload: { name?: string | null; color?: string | null; notes?: string | null }): Promise<Sector> =>
     request(`/sectors/${sectorId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
+  updateSectorContents: (sectorId: number, payload: SectorIn): Promise<Sector> =>
+    request(`/sectors/${sectorId}`, { method: 'PUT', body: JSON.stringify(payload) }),
+  deleteSector: (sectorId: number): Promise<void> =>
+    request(`/sectors/${sectorId}`, { method: 'DELETE' }),
+  createSector: (starChartId: number, quadrantId: number, payload: SectorIn): Promise<Sector> =>
+    request(`/star-charts/${starChartId}/quadrants/${quadrantId}/sectors`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  renameQuadrant: (starChartId: number, quadrantId: number, name: string): Promise<Quadrant> =>
+    request(`/star-charts/${starChartId}/quadrants/${quadrantId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ name }),
+    }),
+  reorderSectors: (starChartId: number, quadrantId: number, sectorIds: number[]): Promise<Quadrant> =>
+    request(`/star-charts/${starChartId}/quadrants/${quadrantId}/sectors/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ sector_ids: sectorIds }),
+    }),
 
   syncRoster: (allyCode: string): Promise<SyncResult> =>
     request(`/sync/roster?ally_code=${encodeURIComponent(allyCode)}`, { method: 'POST' }),

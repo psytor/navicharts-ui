@@ -1,10 +1,14 @@
 import { useState } from 'react';
-import { Card } from 'astrogators-shared-ui';
+import { Card, Button } from 'astrogators-shared-ui';
+import { api } from '../api';
 import { SectorGroup } from './SectorGroup';
+import { SectorEditorPanel } from './SectorEditorPanel';
 import type { Quadrant as QuadrantType } from '../types';
 
 interface QuadrantProps {
   quadrant: QuadrantType;
+  starChartId: number;
+  allQuadrants: QuadrantType[];
   onChange: () => void;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -18,9 +22,11 @@ interface QuadrantProps {
   canModify: boolean;
 }
 
-export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, onEdit, isFirst, isLast, canModify }: QuadrantProps) {
+export function Quadrant({ quadrant, starChartId, allQuadrants, onChange, onMoveUp, onMoveDown, onDelete, onEdit, isFirst, isLast, canModify }: QuadrantProps) {
   const [open, setOpen] = useState(true);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [editingSectorId, setEditingSectorId] = useState<number | null>(null);
+  const [addingSector, setAddingSector] = useState(false);
 
   const systems = quadrant.sectors.flatMap((s) => s.systems);
   const total = systems.length;
@@ -33,6 +39,27 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
       setConfirmingDelete(true);
       setTimeout(() => setConfirmingDelete(false), 3000);
     }
+  }
+
+  async function moveSector(sectorId: number, direction: number) {
+    const ids = quadrant.sectors.map((s) => s.id);
+    const index = ids.indexOf(sectorId);
+    const swapWith = index + direction;
+    if (swapWith < 0 || swapWith >= ids.length) return;
+    [ids[index], ids[swapWith]] = [ids[swapWith], ids[index]];
+    await api.reorderSectors(starChartId, quadrant.id, ids);
+    onChange();
+  }
+
+  async function deleteSector(sectorId: number) {
+    await api.deleteSector(sectorId);
+    onChange();
+  }
+
+  function finishEditingSector() {
+    setEditingSectorId(null);
+    setAddingSector(false);
+    onChange();
   }
 
   return (
@@ -62,7 +89,7 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
             >
               ↓
             </button>
-            <button className="quadrant-move-btn quadrant-edit-btn" title="Edit quadrant" onClick={onEdit}>
+            <button className="quadrant-move-btn quadrant-edit-btn" title="Rename quadrant" onClick={onEdit}>
               Edit
             </button>
             <button
@@ -77,9 +104,47 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
       </div>
       {open && (
         <div className="quadrant-sectors">
-          {quadrant.sectors.map((sector) => (
-            <SectorGroup key={sector.id} sector={sector} onChange={onChange} canModify={canModify} />
-          ))}
+          {quadrant.sectors.map((sector, idx) =>
+            editingSectorId === sector.id ? (
+              <SectorEditorPanel
+                key={sector.id}
+                starChartId={starChartId}
+                quadrantId={quadrant.id}
+                editingSector={sector}
+                allQuadrants={allQuadrants}
+                onSaved={finishEditingSector}
+                onCancel={() => setEditingSectorId(null)}
+              />
+            ) : (
+              <SectorGroup
+                key={sector.id}
+                sector={sector}
+                onChange={onChange}
+                onMoveUp={() => moveSector(sector.id, -1)}
+                onMoveDown={() => moveSector(sector.id, 1)}
+                onDelete={() => deleteSector(sector.id)}
+                onEdit={() => setEditingSectorId(sector.id)}
+                isFirst={idx === 0}
+                isLast={idx === quadrant.sectors.length - 1}
+                canModify={canModify}
+              />
+            )
+          )}
+          {addingSector && (
+            <SectorEditorPanel
+              starChartId={starChartId}
+              quadrantId={quadrant.id}
+              nextOrderIndex={quadrant.sectors.length}
+              allQuadrants={allQuadrants}
+              onSaved={finishEditingSector}
+              onCancel={() => setAddingSector(false)}
+            />
+          )}
+          {canModify && !addingSector && (
+            <Button type="button" variant="outline" size="sm" className="add-quadrant-toggle" onClick={() => setAddingSector(true)}>
+              + Add sector
+            </Button>
+          )}
         </div>
       )}
     </Card>

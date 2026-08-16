@@ -380,7 +380,7 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
                 checked={system.downstream_keys.includes(entry.system._key)}
                 onChange={() => toggleDownstream(entry.system._key)}
               />
-              Sector {entry.sectorIndex + 1} ({entry.system.name || 'system'})
+              {entry.system.name || 'system'}
             </label>
           ))}
           {otherQuadrants?.map((q) => (
@@ -418,7 +418,7 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
                 checked={system.unlock_keys.includes(entry.waypoint._key)}
                 onChange={() => toggleUnlock(entry.waypoint._key)}
               />
-              Sector {entry.sectorIndex + 1} ({entry.waypoint.name || 'waypoint'})
+              {entry.waypoint.name || 'waypoint'}
             </label>
           ))}
           {otherQuadrants?.map((q) => (
