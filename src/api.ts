@@ -35,6 +35,7 @@ import type {
   QuadrantIn,
   Quadrant,
   Sector,
+  System,
   UnitWithRoster,
   Unit,
   GameEvent,
@@ -88,8 +89,10 @@ export const api = {
   deleteSquad: (squadId: number): Promise<void> =>
     request(`/squads/${squadId}`, { method: 'DELETE' }),
 
-  completeSector: (sectorId: number, payload: { notes?: string | null }): Promise<Sector> =>
-    request(`/sectors/${sectorId}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
+  completeSystem: (systemId: number, payload: { notes?: string | null }): Promise<System> =>
+    request(`/systems/${systemId}/complete`, { method: 'POST', body: JSON.stringify(payload) }),
+  updateSector: (sectorId: number, payload: { name?: string | null; color?: string | null; notes?: string | null }): Promise<Sector> =>
+    request(`/sectors/${sectorId}`, { method: 'PATCH', body: JSON.stringify(payload) }),
 
   syncRoster: (allyCode: string): Promise<SyncResult> =>
     request(`/sync/roster?ally_code=${encodeURIComponent(allyCode)}`, { method: 'POST' }),

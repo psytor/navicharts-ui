@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { SectorCard, RewardRow } from './SectorCard';
+import { SectorGroup } from './SectorGroup';
 import type { Quadrant as QuadrantType } from '../types';
 
 interface QuadrantProps {
@@ -12,8 +12,8 @@ interface QuadrantProps {
   isFirst: boolean;
   isLast: boolean;
   // Curated charts are admin-only to edit server-side - hides every write
-  // affordance (move/edit/delete quadrant, sector notes, reward checkboxes)
-  // for a non-admin viewer instead of letting the click 404.
+  // affordance (move/edit/delete quadrant, sector/system notes, sector
+  // rename) for a non-admin viewer instead of letting the click 404.
   canModify: boolean;
 }
 
@@ -21,9 +21,9 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
   const [open, setOpen] = useState(true);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
-  const total = quadrant.sectors.length;
-  const done = quadrant.sectors.filter((s) => s.status).length;
-  const rewards = quadrant.sectors.flatMap((s) => s.rewards);
+  const systems = quadrant.sectors.flatMap((s) => s.systems);
+  const total = systems.length;
+  const done = systems.filter((s) => s.status).length;
 
   function handleDeleteClick() {
     if (confirmingDelete) {
@@ -35,14 +35,10 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
   }
 
   return (
-    <section
-      className="quadrant bracket-panel"
-      style={{ borderColor: quadrant.color || '#666', '--bracket-color': quadrant.color || '#666' } as React.CSSProperties}
-    >
+    <section className="quadrant bracket-panel">
       <div className="quadrant-header">
         <button className="quadrant-header-toggle" onClick={() => setOpen(!open)}>
           <span className="quadrant-index">{String(quadrant.order_index + 1).padStart(2, '0')}</span>
-          <span className="quadrant-dot" style={{ background: quadrant.color || '#666' }} />
           <span className="quadrant-name">{quadrant.name}</span>
           <span className="quadrant-progress">{done} / {total}</span>
           <span className="quadrant-toggle">{open ? '−' : '+'}</span>
@@ -81,15 +77,7 @@ export function Quadrant({ quadrant, onChange, onMoveUp, onMoveDown, onDelete, o
       {open && (
         <div className="quadrant-sectors">
           {quadrant.sectors.map((sector) => (
-            <SectorCard key={sector.id} sector={sector} onChange={onChange} canModify={canModify} />
-          ))}
-        </div>
-      )}
-      {open && rewards.length > 0 && (
-        <div className="quadrant-rewards">
-          <div className="quadrant-rewards-label">Rewards</div>
-          {rewards.map((r) => (
-            <RewardRow key={r.id} reward={r} />
+            <SectorGroup key={sector.id} sector={sector} onChange={onChange} canModify={canModify} />
           ))}
         </div>
       )}

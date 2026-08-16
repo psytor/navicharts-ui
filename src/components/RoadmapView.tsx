@@ -2,7 +2,7 @@ import {
   UnitPortrait, ENERGY_STYLES, CURRENCY_LABELS, CURRENCY_SHOPS, CurrencyCornerBadge, CAMPAIGN_ENERGY, locationDetailLabel,
 } from './Badge';
 import { GearRingPortrait } from './CharacterCard';
-import type { StarChart, SectorRequirement, FarmingLocation, RosterSnapshot, UnitWithRoster } from '../types';
+import type { StarChart, SystemRequirement, FarmingLocation, RosterSnapshot, UnitWithRoster } from '../types';
 
 const MAX_STARS = 7;
 const MAX_GEAR = 13;
@@ -64,9 +64,10 @@ function snapshotMap(units: UnitWithRoster[]): Map<string, RosterSnapshot> {
 }
 
 interface LocationEntry {
-  req: SectorRequirement;
+  req: SystemRequirement;
   quadrantIndex: number;
   sectorOrder: number;
+  systemOrder: number;
   locationDetail?: FarmingLocation;
   currencyKey?: string;
 }
@@ -89,11 +90,10 @@ function buildLocations(starChart: StarChart) {
   }
 
   starChart.quadrants.forEach((quadrant, quadrantIndex) => {
-    quadrant.sectors
-      .filter((sector) => sector.sector_type === 'squad')
-      .forEach((sector) => {
-        sector.requirements.forEach((req) => {
-          const base: LocationEntry = { req, quadrantIndex, sectorOrder: sector.order_index };
+    quadrant.sectors.forEach((sector) => {
+      sector.systems.forEach((system) => {
+        system.requirements.forEach((req) => {
+          const base: LocationEntry = { req, quadrantIndex, sectorOrder: sector.order_index, systemOrder: system.order_index };
           // A unit with more than one real energy-type location (e.g. Kylo
           // Ren Unmasked: Cantina Battles + Light Side Battles) can be
           // checked down to a subset here via energy_locations - null
@@ -147,10 +147,13 @@ function buildLocations(starChart: StarChart) {
           });
         });
       });
+    });
   });
 
   for (const group of groups.values()) {
-    group.entries.sort((a, b) => a.quadrantIndex - b.quadrantIndex || a.sectorOrder - b.sectorOrder);
+    group.entries.sort((a, b) =>
+      a.quadrantIndex - b.quadrantIndex || a.sectorOrder - b.sectorOrder || a.systemOrder - b.systemOrder
+    );
   }
 
   const keys = [...groups.keys()];
@@ -200,18 +203,18 @@ function buildLocations(starChart: StarChart) {
 function buildGearOrder(starChart: StarChart): LocationEntry[] {
   const entries: LocationEntry[] = [];
   starChart.quadrants.forEach((quadrant, quadrantIndex) => {
-    quadrant.sectors
-      .filter((sector) => sector.sector_type === 'squad')
-      .forEach((sector) => {
-        sector.requirements
+    quadrant.sectors.forEach((sector) => {
+      sector.systems.forEach((system) => {
+        system.requirements
           // stars alone aren't a gearing target (e.g. GL supporting-cast
           // fodder that only needs stars) - only include actual gear/relic
           // progression here
           .filter((req) => req.gear_tier != null || req.relic_tier != null)
           .forEach((req) => {
-            entries.push({ req, quadrantIndex, sectorOrder: sector.order_index });
+            entries.push({ req, quadrantIndex, sectorOrder: sector.order_index, systemOrder: system.order_index });
           });
       });
+    });
   });
   return entries;
 }
@@ -221,7 +224,7 @@ function buildGearOrder(starChart: StarChart): LocationEntry[] {
 // already reached the relic tier this requirement asks for while still
 // being short on stars. That's not a gearing task anymore, so Gearing Order
 // drops it once the gear/relic tier itself is reached, regardless of stars.
-function isGearOrRelicComplete(req: SectorRequirement, snap: RosterSnapshot | undefined): boolean {
+function isGearOrRelicComplete(req: SystemRequirement, snap: RosterSnapshot | undefined): boolean {
   if (req.relic_tier != null) return (snap?.relic_tier ?? 0) >= req.relic_tier;
   return (snap?.gear_level ?? 0) >= req.gear_tier!;
 }
@@ -283,7 +286,7 @@ function activeGroupEntries(groups: LocationGroup[], snapshots: Map<string, Rost
     .filter((g) => g.entries.length > 0);
 }
 
-function gearProgressLabel(req: SectorRequirement, snap: RosterSnapshot | undefined): string {
+function gearProgressLabel(req: SystemRequirement, snap: RosterSnapshot | undefined): string {
   const gearLevel = snap?.gear_level ?? 0;
 
   if (req.relic_tier == null) {

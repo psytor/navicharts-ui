@@ -99,6 +99,58 @@
   margin-bottom: 16px;
 }
 
+.star-chart-picker {
+  position: relative;
+}
+
+.star-chart-picker-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-elevated);
+}
+
+.star-chart-picker-group-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+.star-chart-picker-option {
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+
+.star-chart-picker-option:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.star-chart-picker-option.active {
+  color: var(--amber);
+}
+
+.star-chart-picker-visibility {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.star-chart-picker-new {
+  margin-top: 8px;
+  opacity: 0.8;
+}
+
 .app-error, .app-loading {
   padding: 40px;
   text-align: center;
@@ -801,8 +853,42 @@
 .quadrant-sectors {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 16px;
   padding: 0 16px 16px;
+}
+
+.sector-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 3px solid #666;
+  padding-left: 10px;
+}
+
+.sector-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sector-group-name {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.sector-group-notes {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: -4px 0 0;
+}
+
+.sector-group-systems {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .sector-card {
@@ -1103,6 +1189,14 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* the outer Sector-container editor - a level up from the per-System
+   editor above, so it gets a slightly heavier border/background to read as
+   the enclosing group rather than another System card. */
+.sector-editor-container {
+  border-color: var(--amber);
+  background: rgba(232, 200, 90, 0.04);
 }
 
 .sector-editor-header {
@@ -1714,7 +1808,45 @@
   white-space: nowrap;
 }
 
-.squad-flow-node {
+/* Nested one level inside a .quadrant-group-node - same dashed-outline
+   language, just colored per-Sector (via inline style={{color}}) and a
+   touch lighter/smaller so it still reads as the inner grouping. */
+.sector-group-node {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border: 1.5px dashed currentColor;
+  border-radius: 8px;
+  background: none;
+  opacity: 0.9;
+}
+
+.sector-group-node-label {
+  position: absolute;
+  top: -12px;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg);
+  padding: 1px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.sector-group-node-label .quadrant-dot {
+  width: 7px;
+  height: 7px;
+}
+
+.sector-group-node-label .quadrant-name {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.system-flow-node {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg-elevated);
@@ -1722,11 +1854,11 @@
   font-size: 11px;
 }
 
-.squad-flow-node.squad-flow-node-complete {
+.system-flow-node.system-flow-node-complete {
   border-color: var(--met);
 }
 
-.squad-flow-node-header {
+.system-flow-node-header {
   font-weight: 600;
   font-size: 12px;
   margin-bottom: 4px;
@@ -1736,13 +1868,13 @@
   text-overflow: ellipsis;
 }
 
-.squad-flow-node-reqs {
+.system-flow-node-reqs {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
 }
 
-.squad-flow-node-req {
+.system-flow-node-req {
   display: flex;
   align-items: center;
   gap: 4px;

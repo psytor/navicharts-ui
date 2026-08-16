@@ -3,6 +3,10 @@
  * navicharts service exactly (field names/shapes, snake_case as-is - no
  * camelCase translation layer, matching the standalone project's original
  * convention of using backend field names straight through the frontend).
+ *
+ * Hierarchy: StarChart -> Quadrant -> Sector -> System (roster requirements)
+ *                                             -> Waypoint (a reward a System
+ *                                                unlocks)
  */
 
 export type ChartVisibility = "private" | "shared" | "curated";
@@ -64,7 +68,7 @@ export interface GameEvent {
   image_url: string | null;
 }
 
-export interface SectorRequirement {
+export interface SystemRequirement {
   id: number;
   unit: Unit;
   gear_tier: number | null;
@@ -80,35 +84,57 @@ export interface SectorRequirement {
   met: boolean;
 }
 
-export interface Reward {
+// Small pointer to a System or Waypoint, used wherever a full object isn't
+// needed - a Waypoint's unlockers, a System's prerequisites/enables list.
+export interface SystemRef {
+  id: number;
+  name: string | null;
+}
+
+export interface WaypointRef {
   id: number;
   name: string;
-  reward_type: string;
+}
+
+export interface Waypoint {
+  id: number;
+  name: string;
+  waypoint_type: string;
   completed: boolean;
   image_ref: string | null;
   unit: Unit | null;
   event: GameEvent | null;
-  unlocked_by: string | null;
+  // every System that unlocks this Waypoint (usually one, occasionally more)
+  unlocked_by: SystemRef[];
+}
+
+export interface System {
+  id: number;
+  order_index: number;
+  notes: string | null;
+  name: string | null;
+  usable_for: string | null;
+  requirements: SystemRequirement[];
+  unlocks: WaypointRef[];
+  prerequisites: SystemRef[];
+  enables: SystemRef[];
+  status: boolean;
 }
 
 export interface Sector {
   id: number;
+  name: string;
+  color: string | null;
   order_index: number;
-  sector_type: string;
   notes: string | null;
-  squad_name: string | null;
-  usable_for: string | null;
-  requirements: SectorRequirement[];
-  rewards: Reward[];
-  downstream_sector_ids: number[];
-  leads_to: string[];
+  systems: System[];
+  waypoints: Waypoint[];
   status: boolean;
 }
 
 export interface Quadrant {
   id: number;
   name: string;
-  color: string | null;
   order_index: number;
   sectors: Sector[];
 }
@@ -117,7 +143,6 @@ export interface StarChart {
   id: number;
   name: string;
   source: string | null;
-  episode_number: number | null;
   owner_user_id: number | null;
   visibility: ChartVisibility;
   quadrants: Quadrant[];
@@ -127,7 +152,6 @@ export interface StarChartListItem {
   id: number;
   name: string;
   source: string | null;
-  episode_number: number | null;
   owner_user_id: number | null;
   visibility: ChartVisibility;
 }
@@ -169,28 +193,45 @@ export interface UnitRequirementIn {
   omicron_ability_ids: string[];
 }
 
-export interface RewardIn {
+export interface WaypointIn {
+  id: number | null;
   name: string;
-  reward_type: string;
+  waypoint_type: string;
   unit_id: string | null;
   event_id: string | null;
 }
 
-export interface SectorIn {
-  sector_type: string;
+export interface SystemIn {
+  id: number | null;
   order_index: number;
   notes: string | null;
-  squad_name: string | null;
+  name: string | null;
   usable_for: string | null;
   requirements: UnitRequirementIn[];
-  rewards: RewardIn[];
-  downstream_indices: number[];
-  downstream_sector_ids: number[];
+  // indices into the flattened (quadrant-wide) list of Waypoints in THIS
+  // SAME payload that this System unlocks
+  unlock_waypoint_indices: number[];
+  // absolute ids of already-existing Waypoints this System unlocks
+  unlock_waypoint_ids: number[];
+  // indices into the flattened list of Systems in THIS SAME payload that
+  // must be built before this one
+  prerequisite_system_indices: number[];
+  // absolute ids of already-existing Systems that must be built before this one
+  prerequisite_system_ids: number[];
+}
+
+export interface SectorIn {
+  id: number | null;
+  name: string;
+  color: string | null;
+  order_index: number;
+  notes: string | null;
+  systems: SystemIn[];
+  waypoints: WaypointIn[];
 }
 
 export interface QuadrantIn {
   name: string;
-  color: string | null;
   order_index: number;
   sectors: SectorIn[];
 }
@@ -198,7 +239,6 @@ export interface QuadrantIn {
 export interface StarChartCreateIn {
   name: string;
   source: string | null;
-  episode_number: number | null;
 }
 
 export interface SquadMemberIn {

@@ -3,77 +3,21 @@ import { NavBar, useAuth } from 'astrogators-shared-ui';
 import { api } from './api';
 import { Quadrant } from './components/Quadrant';
 import { QuadrantBuilder } from './components/QuadrantBuilder';
+import { StarChartPicker } from './components/StarChartPicker';
 import { RoadmapView } from './components/RoadmapView';
 import { FlowView } from './components/FlowView';
 import { InventoryView } from './components/InventoryView';
 import { SquadBuilder } from './components/SquadBuilder';
-import type { StarChart, StarChartListItem, UnitWithRoster, StarChartCreateIn } from './types';
+import type { StarChart, StarChartListItem, UnitWithRoster } from './types';
 import './App.css';
-
-function episodeLabel(g: StarChartListItem): string {
-  return g.episode_number != null ? `Episode ${g.episode_number}` : g.name;
-}
-
-function NewEpisodeForm({ onCreated, onCancel }: { onCreated: (chart: StarChartListItem) => void; onCancel: () => void }) {
-  const [name, setName] = useState('');
-  const [source, setSource] = useState('');
-  const [episodeNumber, setEpisodeNumber] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function submit() {
-    setSaving(true);
-    setError(null);
-    try {
-      const payload: StarChartCreateIn = {
-        name,
-        source: source || null,
-        episode_number: episodeNumber ? Number(episodeNumber) : null,
-      };
-      const created = await api.createStarChart(payload);
-      onCreated(created);
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div className="new-episode-form">
-      <input
-        type="text"
-        placeholder="Star Chart name (e.g. 2026 F2P Farming Guide - Episode 2)"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
-      <input
-        type="text"
-        placeholder="Source (optional)"
-        value={source}
-        onChange={(e) => setSource(e.target.value)}
-      />
-      <input
-        type="number"
-        placeholder="Episode #"
-        value={episodeNumber}
-        onChange={(e) => setEpisodeNumber(e.target.value)}
-      />
-      <button onClick={submit} disabled={saving || !name.trim()}>
-        {saving ? 'Creating...' : 'Create'}
-      </button>
-      <button onClick={onCancel} disabled={saving}>Cancel</button>
-      {error && <p className="add-quadrant-error">{error}</p>}
-    </div>
-  );
-}
 
 type ViewName = 'roadmap' | 'plan' | 'visualise' | 'inventory';
 
 function App() {
   const { user, selectedAllyCode, isLoading: authLoading } = useAuth();
 
-  const [starCharts, setStarCharts] = useState<StarChartListItem[]>([]);
+  const [myCharts, setMyCharts] = useState<StarChartListItem[]>([]);
+  const [curatedCharts, setCuratedCharts] = useState<StarChartListItem[]>([]);
   const [activeStarChartId, setActiveStarChartId] = useState<number | null>(() => {
     const stored = localStorage.getItem('activeStarChartId');
     return stored ? Number(stored) : null;
@@ -85,7 +29,6 @@ function App() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [view, setView] = useState<ViewName>('roadmap');
   const [editingQuadrantId, setEditingQuadrantId] = useState<number | null>(null);
-  const [addingEpisode, setAddingEpisode] = useState(false);
 
   const loadStarChartDetail = useCallback(async (starChartId: number) => {
     try {
@@ -104,21 +47,20 @@ function App() {
   const loadStarCharts = useCallback(async () => {
     try {
       // No single "list everything" endpoint anymore now that charts are
-      // owned per-user - the tab strip is the union of the current user's
-      // own charts and the admin-curated ones (e.g. the seed F2P guide).
-      // "mine" 401s with no token; that's fine unauthenticated, just an
-      // empty list.
+      // owned per-user - "mine" 401s with no token; that's fine
+      // unauthenticated, just an empty list.
       const [mine, curated] = await Promise.all([
         user ? api.getMyStarCharts().catch(() => []) : Promise.resolve([]),
         api.getCuratedStarCharts().catch(() => []),
       ]);
+      setMyCharts(mine);
+      setCuratedCharts(curated);
       const list = [...mine, ...curated];
-      setStarCharts(list);
       if (list.length === 0) {
         setError('No star charts found. Log in and create one, or check that the curated guide has been seeded.');
         return;
       }
-      // keep the currently selected episode if it still exists, otherwise
+      // keep the currently selected star chart if it still exists, otherwise
       // fall back to the first one
       setActiveStarChartId((current) => {
         const stillExists = current != null && list.some((g) => g.id === current);
@@ -148,10 +90,20 @@ function App() {
     setActiveStarChartId(starChartId);
   }
 
-  async function handleEpisodeCreated(created: StarChartListItem) {
-    setAddingEpisode(false);
+  async function handleStarChartCreated(created: StarChartListItem) {
     await loadStarCharts();
     switchStarChart(created.id);
+  }
+
+  // The top Quadrant strip is a quick-jump list, not a filter - every view
+  // already renders every Quadrant in the chart at once (there's no
+  // "active quadrant" concept anywhere else), so a tab click just switches
+  // to the Plan tab and scrolls that Quadrant's card into view.
+  function jumpToQuadrant(quadrantId: number) {
+    setView('plan');
+    requestAnimationFrame(() => {
+      document.getElementById(`quadrant-${quadrantId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
 
   async function moveQuadrant(quadrantId: number, direction: number) {
@@ -206,6 +158,13 @@ function App() {
 
   const rightExtras = (
     <div className="sync-controls">
+      <StarChartPicker
+        myCharts={myCharts}
+        curatedCharts={curatedCharts}
+        activeStarChartId={activeStarChartId}
+        onSwitch={switchStarChart}
+        onCreated={handleStarChartCreated}
+      />
       <button onClick={handleSync} disabled={syncing}>
         {syncing ? 'Syncing...' : 'Sync Roster'}
       </button>
@@ -231,20 +190,11 @@ function App() {
             {syncMessage && <div className="sync-message">{syncMessage}</div>}
 
             <nav className="episode-tabs">
-              {starCharts.map((g) => (
-                <button
-                  key={g.id}
-                  className={g.id === activeStarChartId ? 'active' : ''}
-                  onClick={() => switchStarChart(g.id)}
-                >
-                  {episodeLabel(g)}
+              {starChart.quadrants.map((q) => (
+                <button key={q.id} onClick={() => jumpToQuadrant(q.id)}>
+                  {q.name}
                 </button>
               ))}
-              {addingEpisode ? (
-                <NewEpisodeForm onCreated={handleEpisodeCreated} onCancel={() => setAddingEpisode(false)} />
-              ) : (
-                <button className="episode-tab-add" onClick={() => setAddingEpisode(true)}>+ New Episode</button>
-              )}
             </nav>
 
             <nav className="view-tabs">
@@ -252,7 +202,7 @@ function App() {
                 className={view === 'roadmap' ? 'active' : ''}
                 onClick={() => setView('roadmap')}
               >
-                Star Charts
+                Roadmap
               </button>
               <button
                 className={view === 'plan' ? 'active' : ''}
@@ -294,18 +244,19 @@ function App() {
                         allQuadrants={starChart.quadrants}
                       />
                     ) : (
-                      <Quadrant
-                        key={quadrant.id}
-                        quadrant={quadrant}
-                        onChange={loadStarChart}
-                        onMoveUp={() => moveQuadrant(quadrant.id, -1)}
-                        onMoveDown={() => moveQuadrant(quadrant.id, 1)}
-                        onDelete={() => deleteQuadrant(quadrant.id)}
-                        onEdit={() => setEditingQuadrantId(quadrant.id)}
-                        isFirst={idx === 0}
-                        isLast={idx === starChart.quadrants.length - 1}
-                        canModify={canModify}
-                      />
+                      <div id={`quadrant-${quadrant.id}`} key={quadrant.id}>
+                        <Quadrant
+                          quadrant={quadrant}
+                          onChange={loadStarChart}
+                          onMoveUp={() => moveQuadrant(quadrant.id, -1)}
+                          onMoveDown={() => moveQuadrant(quadrant.id, 1)}
+                          onDelete={() => deleteQuadrant(quadrant.id)}
+                          onEdit={() => setEditingQuadrantId(quadrant.id)}
+                          isFirst={idx === 0}
+                          isLast={idx === starChart.quadrants.length - 1}
+                          canModify={canModify}
+                        />
+                      </div>
                     )
                   )}
                 </main>

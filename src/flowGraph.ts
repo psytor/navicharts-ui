@@ -1,23 +1,38 @@
 import dagre from '@dagrejs/dagre';
 import type { Node, Edge } from '@xyflow/react';
-import type { StarChart, Quadrant, Sector, Reward } from './types';
+import type { StarChart, Quadrant, Sector, System, Waypoint } from './types';
 
 // Sized for RequirementPortrait's 56px corner-badge portraits (see
 // req-portrait-wrap in App.css), not DOM-measured - these are estimates fed
 // to dagre + the obstacle-aware edge router below, so they need to track
-// the actual rendered .squad-flow-node-req size or edges route through the
-// (now much bigger) cards. Retune here first if a squad box's edges/borders
+// the actual rendered .system-flow-node-req size or edges route through the
+// (now much bigger) cards. Retune here first if a system box's edges/borders
 // look wrong once the corner badges are in the browser.
-const SQUAD_NODE_WIDTH = 280;
-const SQUAD_ROW_HEIGHT = 72;
-const SQUAD_HEADER_HEIGHT = 40;
+const SYSTEM_NODE_WIDTH = 280;
+const SYSTEM_ROW_HEIGHT = 72;
+const SYSTEM_HEADER_HEIGHT = 40;
 const REQS_PER_ROW = 3;
-const REWARD_NODE_WIDTH = 140;
-const REWARD_NODE_HEIGHT = 70;
+// Plain "hex" waypoints (.reward-flow-node-hex in App.css) render at this
+// size. Banner-style waypoints (.reward-flow-node-banner - any waypoint
+// whose resolved event has a real banner image, see WaypointFlowNode's
+// isBanner) render taller and narrower instead - see waypointNodeSize below,
+// which must track both these and the CSS in lockstep or the banner variant
+// overflows the box the layout allocated for it.
+const WAYPOINT_NODE_WIDTH = 140;
+const WAYPOINT_NODE_HEIGHT = 70;
+const WAYPOINT_BANNER_WIDTH = 120;
+const WAYPOINT_BANNER_HEIGHT = 160;
 const RANK_SEP = 70;
 const NODE_SEP = 40;
+// Quadrant-level (outer) clustering
 const CLUSTER_PADDING = 40;
 const CLUSTER_GUTTER = 160;
+const QUADRANT_LABEL_SPACE = 32;
+// Sector-level (inner, nested within a Quadrant) clustering - tighter than
+// the quadrant level since it's a sub-grouping, not the outermost box.
+const SECTOR_PADDING = 22;
+const SECTOR_CLUSTER_GUTTER = 90;
+const SECTOR_LABEL_SPACE = 26;
 
 const OBSTACLE_MARGIN = 14;
 const EDGE_STUB = 22;
@@ -25,70 +40,92 @@ const CLEAR_SEARCH_STEP = 12;
 const CLEAR_SEARCH_MAX_STEPS = 250;
 const EDGE_CORNER_RADIUS = 10;
 
-function squadNodeHeight(sector: Sector): number {
-  const rows = Math.max(1, Math.ceil((sector.requirements.length || 1) / REQS_PER_ROW));
-  return SQUAD_HEADER_HEIGHT + rows * SQUAD_ROW_HEIGHT;
+function systemNodeHeight(system: System): number {
+  const rows = Math.max(1, Math.ceil((system.requirements.length || 1) / REQS_PER_ROW));
+  return SYSTEM_HEADER_HEIGHT + rows * SYSTEM_ROW_HEIGHT;
 }
 
-interface RawSectorEdge {
+// Mirrors WaypointFlowNode's own isBanner check - same event.image_url
+// presence decides which of the two very differently-shaped variants
+// actually renders, so the layout box has to match per-waypoint, not use
+// one flat size for both.
+function waypointNodeSize(waypoint: Waypoint): { width: number; height: number } {
+  const isBanner = !!waypoint.event?.image_url;
+  return isBanner
+    ? { width: WAYPOINT_BANNER_WIDTH, height: WAYPOINT_BANNER_HEIGHT }
+    : { width: WAYPOINT_NODE_WIDTH, height: WAYPOINT_NODE_HEIGHT };
+}
+
+interface RawEdge {
   id: string;
   source: string;
   target: string;
+  sourceSectorId: number;
+  targetSectorId: number;
   sourceQuadrantId: number;
-  targetQuadrantId: number | undefined;
-  crossQuadrant: boolean;
-}
-
-interface RawRewardEdge {
-  id: string;
-  source: string;
-  target: string;
+  targetQuadrantId: number;
+  crossSector: boolean;
   crossQuadrant: boolean;
 }
 
 // Walks starChart.quadrants[].sectors[] and produces the raw (unpositioned)
-// graph shape: one node per Sector ("squadNode"), one node per Reward
-// ("rewardNode"), grouped by their owning Quadrant. Edges come from two
-// places - sector.rewards (implicit, no DB edge exists for "a sector unlocks
-// its own reward") and sector.downstream_sector_ids (explicit SectorEdge
-// rows, which may cross quadrants). Rewards are always edge targets, never
-// sources: nothing in the data model ever originates an edge from a reward
-// node.
+// graph shape: one node per System ("systemNode"), one node per Waypoint
+// ("waypointNode"), grouped by Sector within Quadrant. Edges come from two
+// places: system.unlocks (a System unlocking a Waypoint) and
+// system.prerequisites (a System that must be built before this one) -
+// either can cross Sector and/or Quadrant boundaries. Waypoints are always
+// edge targets, never sources: nothing in the data model ever originates an
+// edge from a Waypoint node.
 export function deriveGraph(starChart: StarChart) {
-  const sectorQuadrant = new Map<number, Quadrant>();
+  const systemLocation = new Map<number, { sector: Sector; quadrant: Quadrant }>();
+  const waypointLocation = new Map<number, { sector: Sector; quadrant: Quadrant }>();
   starChart.quadrants.forEach((quadrant) => {
-    quadrant.sectors.forEach((sector) => sectorQuadrant.set(sector.id, quadrant));
+    quadrant.sectors.forEach((sector) => {
+      sector.systems.forEach((s) => systemLocation.set(s.id, { sector, quadrant }));
+      sector.waypoints.forEach((w) => waypointLocation.set(w.id, { sector, quadrant }));
+    });
   });
 
   const quadrants = [...starChart.quadrants].sort((a, b) => a.order_index - b.order_index);
-  const sectorEdges: RawSectorEdge[] = [];
-  const rewardEdges: RawRewardEdge[] = [];
+  const prerequisiteEdges: RawEdge[] = [];
+  const unlockEdges: RawEdge[] = [];
 
   starChart.quadrants.forEach((quadrant) => {
     quadrant.sectors.forEach((sector) => {
-      sector.rewards.forEach((reward) => {
-        rewardEdges.push({
-          id: `r-${sector.id}-${reward.id}`,
-          source: `sector-${sector.id}`,
-          target: `reward-${reward.id}`,
-          crossQuadrant: false,
+      sector.systems.forEach((system) => {
+        system.unlocks.forEach((waypoint) => {
+          const target = waypointLocation.get(waypoint.id);
+          unlockEdges.push({
+            id: `u-${system.id}-${waypoint.id}`,
+            source: `system-${system.id}`,
+            target: `waypoint-${waypoint.id}`,
+            sourceSectorId: sector.id,
+            targetSectorId: target?.sector.id ?? sector.id,
+            sourceQuadrantId: quadrant.id,
+            targetQuadrantId: target?.quadrant.id ?? quadrant.id,
+            crossSector: !!target && target.sector.id !== sector.id,
+            crossQuadrant: !!target && target.quadrant.id !== quadrant.id,
+          });
         });
-      });
-      sector.downstream_sector_ids.forEach((targetId) => {
-        const targetQuadrant = sectorQuadrant.get(targetId);
-        sectorEdges.push({
-          id: `e-${sector.id}-${targetId}`,
-          source: `sector-${sector.id}`,
-          target: `sector-${targetId}`,
-          sourceQuadrantId: quadrant.id,
-          targetQuadrantId: targetQuadrant?.id,
-          crossQuadrant: !!targetQuadrant && targetQuadrant.id !== quadrant.id,
+        system.prerequisites.forEach((prereq) => {
+          const source = systemLocation.get(prereq.id);
+          prerequisiteEdges.push({
+            id: `p-${prereq.id}-${system.id}`,
+            source: `system-${prereq.id}`,
+            target: `system-${system.id}`,
+            sourceSectorId: source?.sector.id ?? sector.id,
+            targetSectorId: sector.id,
+            sourceQuadrantId: source?.quadrant.id ?? quadrant.id,
+            targetQuadrantId: quadrant.id,
+            crossSector: !!source && source.sector.id !== sector.id,
+            crossQuadrant: !!source && source.quadrant.id !== quadrant.id,
+          });
         });
       });
     });
   });
 
-  return { quadrants, sectorEdges, rewardEdges };
+  return { quadrants, prerequisiteEdges, unlockEdges };
 }
 
 const LANE_GUTTER = 48;
@@ -106,8 +143,9 @@ interface NodeMeta {
   height: number;
 }
 
-// dagre-lays-out a single connected component (one chain of sectors/rewards)
-// on its own, returning node positions relative to that component alone.
+// dagre-lays-out a single connected component (one chain of systems/
+// waypoints) on its own, returning node positions relative to that
+// component alone.
 function layoutComponent(nodeIds: string[], nodeMeta: Map<string, NodeMeta>, edges: [string, string][]) {
   if (nodeIds.length === 1) {
     const id = nodeIds[0];
@@ -134,88 +172,6 @@ function layoutComponent(nodeIds: string[], nodeMeta: Map<string, NodeMeta>, edg
     maxY = Math.max(maxY, top + height);
   });
   return { nodes, width: maxX, height: maxY };
-}
-
-// A quadrant's sectors often aren't one single chain - e.g. "Start Here" has
-// two prep sectors whose only children live in OTHER quadrants, so within
-// this quadrant they're leaves with nothing below them. Running one flat
-// dagre pass over the whole quadrant puts every parentless sector in the
-// same top rank (dagre has no reason not to), which stretches the box
-// exactly as wide as the busiest rank and leaves those leaf columns' lower
-// rows empty - reading as "spread across the whole box" instead of the
-// reference guide's tight, self-contained lanes. So instead: find each
-// weakly-connected component within the quadrant's own sector/reward graph
-// (ignoring cross-quadrant edges, which are handled separately), lay each
-// one out on its own, then pack the resulting lanes snugly left-to-right -
-// every lane is exactly as wide as its own content, in the quadrant's
-// original sector order.
-function layoutQuadrantCluster(quadrant: Quadrant) {
-  const sectorIds = new Set(quadrant.sectors.map((s) => `sector-${s.id}`));
-  const nodeMeta = new Map<string, NodeMeta>();
-  const adjacency = new Map<string, Set<string>>();
-  const edgeList: [string, string][] = [];
-  const laneOrder = new Map<string, number>();
-
-  function link(a: string, b: string) {
-    adjacency.get(a)!.add(b);
-    adjacency.get(b)!.add(a);
-  }
-
-  quadrant.sectors.forEach((sector) => {
-    const sectorKey = `sector-${sector.id}`;
-    nodeMeta.set(sectorKey, { width: SQUAD_NODE_WIDTH, height: squadNodeHeight(sector) });
-    adjacency.set(sectorKey, new Set());
-    laneOrder.set(sectorKey, sector.order_index);
-
-    sector.rewards.forEach((reward) => {
-      const rewardKey = `reward-${reward.id}`;
-      nodeMeta.set(rewardKey, { width: REWARD_NODE_WIDTH, height: REWARD_NODE_HEIGHT });
-      adjacency.set(rewardKey, new Set());
-      laneOrder.set(rewardKey, sector.order_index);
-      edgeList.push([sectorKey, rewardKey]);
-    });
-
-    sector.downstream_sector_ids.forEach((targetId) => {
-      const targetKey = `sector-${targetId}`;
-      if (sectorIds.has(targetKey)) edgeList.push([sectorKey, targetKey]);
-    });
-  });
-
-  edgeList.forEach(([a, b]) => link(a, b));
-
-  const visited = new Set<string>();
-  const components: string[][] = [];
-  for (const id of nodeMeta.keys()) {
-    if (visited.has(id)) continue;
-    visited.add(id);
-    const queue = [id];
-    const comp: string[] = [];
-    while (queue.length) {
-      const cur = queue.shift()!;
-      comp.push(cur);
-      for (const neighbour of adjacency.get(cur)!) {
-        if (!visited.has(neighbour)) {
-          visited.add(neighbour);
-          queue.push(neighbour);
-        }
-      }
-    }
-    components.push(comp);
-  }
-
-  components.sort(
-    (a, b) => Math.min(...a.map((id) => laneOrder.get(id)!)) - Math.min(...b.map((id) => laneOrder.get(id)!))
-  );
-
-  const lanes = components.map((comp) => {
-    const compSet = new Set(comp);
-    const compEdges = edgeList.filter(([a, b]) => compSet.has(a) && compSet.has(b));
-    const laneMeta = new Map(comp.map((id) => [id, nodeMeta.get(id)!]));
-    return layoutComponent(comp, laneMeta, compEdges);
-  });
-
-  const { nodes, width, height } = packLanes(lanes);
-  return { quadrant, nodes, width, height };
 }
 
 interface Lane {
@@ -264,6 +220,148 @@ function packLanes(lanes: Lane[]) {
   });
 
   return { nodes, width: Math.max(0, cursorX - LANE_GUTTER), height: maxHeight };
+}
+
+// Shared by both clustering levels below: given a flat pool of nodes and the
+// edges that stay entirely within that pool, groups them into weakly-
+// connected components (each laid out independently via dagre), then packs
+// those components into snug lanes - see packLanes' docstring for why a
+// single flat dagre pass over the whole pool doesn't work.
+function clusterNodes(nodeIds: string[], nodeMeta: Map<string, NodeMeta>, internalEdges: [string, string][], laneOrder: Map<string, number>) {
+  const adjacency = new Map<string, Set<string>>();
+  nodeIds.forEach((id) => adjacency.set(id, new Set()));
+  internalEdges.forEach(([a, b]) => {
+    adjacency.get(a)?.add(b);
+    adjacency.get(b)?.add(a);
+  });
+
+  const visited = new Set<string>();
+  const components: string[][] = [];
+  for (const id of nodeIds) {
+    if (visited.has(id)) continue;
+    visited.add(id);
+    const queue = [id];
+    const comp: string[] = [];
+    while (queue.length) {
+      const cur = queue.shift()!;
+      comp.push(cur);
+      for (const neighbour of adjacency.get(cur) ?? []) {
+        if (!visited.has(neighbour)) {
+          visited.add(neighbour);
+          queue.push(neighbour);
+        }
+      }
+    }
+    components.push(comp);
+  }
+
+  components.sort(
+    (a, b) => Math.min(...a.map((id) => laneOrder.get(id)!)) - Math.min(...b.map((id) => laneOrder.get(id)!))
+  );
+
+  const lanes = components.map((comp) => {
+    const compSet = new Set(comp);
+    const compEdges = internalEdges.filter(([a, b]) => compSet.has(a) && compSet.has(b));
+    const laneMeta = new Map(comp.map((id) => [id, nodeMeta.get(id)!]));
+    return layoutComponent(comp, laneMeta, compEdges);
+  });
+
+  return packLanes(lanes);
+}
+
+// Lays out one Sector's own Systems/Waypoints as a self-contained cluster,
+// ignoring edges that leave the Sector (those are handled one level up, by
+// layoutSectorPositions pulling connected Sectors near each other, and
+// ultimately by the obstacle-avoiding router once every position is
+// absolute) - same "ignore boundary-crossing edges when forming components"
+// approach the Quadrant level below uses.
+function layoutSectorCluster(sector: Sector) {
+  const nodeMeta = new Map<string, NodeMeta>();
+  const laneOrder = new Map<string, number>();
+  const nodeIds: string[] = [];
+
+  sector.systems.forEach((system) => {
+    const key = `system-${system.id}`;
+    nodeMeta.set(key, { width: SYSTEM_NODE_WIDTH, height: systemNodeHeight(system) });
+    laneOrder.set(key, system.order_index);
+    nodeIds.push(key);
+  });
+  sector.waypoints.forEach((waypoint) => {
+    const key = `waypoint-${waypoint.id}`;
+    nodeMeta.set(key, waypointNodeSize(waypoint));
+    laneOrder.set(key, 0);
+    nodeIds.push(key);
+  });
+
+  const nodeIdSet = new Set(nodeIds);
+  const internalEdges: [string, string][] = [];
+  sector.systems.forEach((system) => {
+    system.unlocks.forEach((waypoint) => {
+      const target = `waypoint-${waypoint.id}`;
+      if (nodeIdSet.has(target)) internalEdges.push([`system-${system.id}`, target]);
+    });
+    system.prerequisites.forEach((prereq) => {
+      const source = `system-${prereq.id}`;
+      if (nodeIdSet.has(source)) internalEdges.push([source, `system-${system.id}`]);
+    });
+  });
+
+  const { nodes, width, height } = clusterNodes(nodeIds, nodeMeta, internalEdges, laneOrder);
+  return { sector, nodes, width, height };
+}
+
+// Arranges a Quadrant's Sector clusters relative to each other using dagre,
+// pulled together by edges that cross Sectors but stay within this
+// Quadrant - same "connected things land adjacent" idea
+// layoutQuadrantPositions uses one level up for Quadrants themselves.
+function layoutSectorPositions(sectorClusters: ReturnType<typeof layoutSectorCluster>[], crossSectorEdges: RawEdge[]): Map<number, { x: number; y: number }> {
+  const meta = new dagre.graphlib.Graph();
+  meta.setGraph({ rankdir: 'LR', ranksep: SECTOR_CLUSTER_GUTTER, nodesep: SECTOR_CLUSTER_GUTTER });
+  meta.setDefaultEdgeLabel(() => ({}));
+
+  sectorClusters.forEach((cluster) => {
+    meta.setNode(String(cluster.sector.id), {
+      width: cluster.width + SECTOR_PADDING * 2,
+      height: cluster.height + SECTOR_PADDING * 2 + SECTOR_LABEL_SPACE,
+    });
+  });
+
+  crossSectorEdges.forEach((e) => {
+    if (e.crossQuadrant) return;
+    const a = String(e.sourceSectorId);
+    const b = String(e.targetSectorId);
+    if (a !== b && meta.hasNode(a) && meta.hasNode(b)) meta.setEdge(a, b);
+  });
+
+  dagre.layout(meta);
+
+  const positions = new Map<number, { x: number; y: number }>();
+  meta.nodes().forEach((id) => {
+    const { x, y, width, height } = meta.node(id);
+    positions.set(Number(id), { x: x - width / 2, y: y - height / 2 });
+  });
+  return positions;
+}
+
+// Combines a Quadrant's Sector clusters into one bounding box, positioning
+// each Sector within it via layoutSectorPositions.
+function layoutQuadrantCluster(quadrant: Quadrant, allEdges: RawEdge[]) {
+  const sectorClusters = quadrant.sectors.map(layoutSectorCluster);
+  const crossSectorEdges = allEdges.filter((e) => !e.crossQuadrant);
+  const sectorPositions = layoutSectorPositions(sectorClusters, crossSectorEdges);
+
+  let maxX = 0;
+  let maxY = 0;
+  const sectors = sectorClusters.map((cluster) => {
+    const pos = sectorPositions.get(cluster.sector.id) ?? { x: 0, y: 0 };
+    const width = cluster.width + SECTOR_PADDING * 2;
+    const height = cluster.height + SECTOR_PADDING * 2 + SECTOR_LABEL_SPACE;
+    maxX = Math.max(maxX, pos.x + width);
+    maxY = Math.max(maxY, pos.y + height);
+    return { cluster, x: pos.x, y: pos.y };
+  });
+
+  return { quadrant, sectors, width: maxX, height: maxY };
 }
 
 type Side = 'left' | 'right' | 'top' | 'bottom';
@@ -401,23 +499,23 @@ function routeOrthogonal(source: Rect, target: Rect, obstacles: Rect[]): Point[]
   return [exit, exitStub, ...mid, entryStub, entry];
 }
 
-function buildRoutedSectorEdgePath(source: Rect, target: Rect, obstacles: Rect[]): string {
+function buildRoutedPrerequisiteEdgePath(source: Rect, target: Rect, obstacles: Rect[]): string {
   return roundedPathFromPoints(routeOrthogonal(source, target, obstacles), EDGE_CORNER_RADIUS);
 }
 
 // Arranges quadrant clusters using dagre again, this time treating each
 // whole quadrant as a single meta-node sized to its cluster's bounding box,
 // with one meta-edge per pair of quadrants that has a real cross-quadrant
-// SectorEdge between them. Without this, a naive grid pack (row-major by
+// edge between them. Without this, a naive grid pack (row-major by
 // order_index) places quadrants with no regard for which ones actually
 // connect, so a cross-quadrant line from column 0 to column 2 has no choice
 // but to cut straight through column 1's box - exactly the "lines passing
 // under each other" problem. Laying out the meta-graph with LR (quadrants
-// connect left-to-right) while each quadrant's own internal squad chain
-// stays TB (top-to-bottom) means connected quadrants land adjacent to each
-// other, so most cross-quadrant edges only have to bridge a short gap
-// between neighbouring boxes instead of crossing unrelated ones.
-function layoutQuadrantPositions(clusters: ReturnType<typeof layoutQuadrantCluster>[], sectorEdges: RawSectorEdge[], labelSpace: number): Map<number, { x: number; y: number }> {
+// connect left-to-right) while each quadrant's own internal content stays
+// TB (top-to-bottom) means connected quadrants land adjacent to each other,
+// so most cross-quadrant edges only have to bridge a short gap between
+// neighbouring boxes instead of crossing unrelated ones.
+function layoutQuadrantPositions(clusters: ReturnType<typeof layoutQuadrantCluster>[], allEdges: RawEdge[]): Map<number, { x: number; y: number }> {
   const meta = new dagre.graphlib.Graph();
   meta.setGraph({ rankdir: 'LR', ranksep: CLUSTER_GUTTER, nodesep: CLUSTER_GUTTER });
   meta.setDefaultEdgeLabel(() => ({}));
@@ -425,11 +523,11 @@ function layoutQuadrantPositions(clusters: ReturnType<typeof layoutQuadrantClust
   clusters.forEach((cluster) => {
     meta.setNode(String(cluster.quadrant.id), {
       width: cluster.width + CLUSTER_PADDING * 2,
-      height: cluster.height + CLUSTER_PADDING * 2 + labelSpace,
+      height: cluster.height + CLUSTER_PADDING * 2 + QUADRANT_LABEL_SPACE,
     });
   });
 
-  sectorEdges.forEach((e) => {
+  allEdges.forEach((e) => {
     if (!e.crossQuadrant) return;
     const a = String(e.sourceQuadrantId);
     const b = String(e.targetQuadrantId);
@@ -448,28 +546,45 @@ function layoutQuadrantPositions(clusters: ReturnType<typeof layoutQuadrantClust
 
 interface DeriveGraphResult {
   quadrants: Quadrant[];
-  sectorEdges: RawSectorEdge[];
-  rewardEdges: RawRewardEdge[];
+  prerequisiteEdges: RawEdge[];
+  unlockEdges: RawEdge[];
 }
 
-export function layoutGraph({ quadrants, sectorEdges, rewardEdges }: DeriveGraphResult): { nodes: Node[]; edges: Edge[] } {
-  const clusters = quadrants.map(layoutQuadrantCluster);
+export function layoutGraph({ quadrants, prerequisiteEdges, unlockEdges }: DeriveGraphResult): { nodes: Node[]; edges: Edge[] } {
+  const allEdges = [...prerequisiteEdges, ...unlockEdges];
+  const clusters = quadrants.map((q) => layoutQuadrantCluster(q, allEdges));
 
   const nodes: Node[] = [];
-  // absolute (canvas-space) rect per sector/reward node, filled in below as
-  // each node's position is resolved - used after the loop to route sector
-  // edges around every card that isn't their own endpoint.
+  // absolute (canvas-space) rect per system/waypoint node, filled in below as
+  // each node's position is resolved - used after the loop to route
+  // prerequisite edges around every card that isn't their own endpoint.
   const absoluteRects = new Map<string, Rect>();
-  const quadrantColorById = new Map(quadrants.map((q) => [q.id, q.color || '#666']));
-  // room reserved at the top of each group's local space for the quadrant label
-  const LABEL_SPACE = 32;
-  const quadrantPositions = layoutQuadrantPositions(clusters, sectorEdges, LABEL_SPACE);
+  // color lives on Sector, not Quadrant - used for prerequisite-edge color
+  // (the Sector box itself carries the color visually, see 'sectorGroup').
+  const nodeColorById = new Map<string, string>();
+  const systemById = new Map<string, System>();
+  const waypointById = new Map<string, Waypoint>();
+  quadrants.forEach((q) => {
+    q.sectors.forEach((sec) => {
+      const color = sec.color || '#666';
+      sec.systems.forEach((s) => {
+        nodeColorById.set(`system-${s.id}`, color);
+        systemById.set(`system-${s.id}`, s);
+      });
+      sec.waypoints.forEach((w) => {
+        nodeColorById.set(`waypoint-${w.id}`, color);
+        waypointById.set(`waypoint-${w.id}`, w);
+      });
+    });
+  });
 
-  clusters.forEach((cluster) => {
-    const groupId = `quadrant-${cluster.quadrant.id}`;
-    const groupWidth = cluster.width + CLUSTER_PADDING * 2;
-    const groupHeight = cluster.height + CLUSTER_PADDING * 2 + LABEL_SPACE;
-    const { x: groupX, y: groupY } = quadrantPositions.get(cluster.quadrant.id)!;
+  const quadrantPositions = layoutQuadrantPositions(clusters, allEdges);
+
+  clusters.forEach((qCluster) => {
+    const groupId = `quadrant-${qCluster.quadrant.id}`;
+    const groupWidth = qCluster.width + CLUSTER_PADDING * 2;
+    const groupHeight = qCluster.height + CLUSTER_PADDING * 2 + QUADRANT_LABEL_SPACE;
+    const { x: groupX, y: groupY } = quadrantPositions.get(qCluster.quadrant.id) ?? { x: 0, y: 0 };
 
     nodes.push({
       id: groupId,
@@ -481,60 +596,81 @@ export function layoutGraph({ quadrants, sectorEdges, rewardEdges }: DeriveGraph
       // canvas does), so these need to be set on top of the CSS-facing style.
       width: groupWidth,
       height: groupHeight,
-      data: { quadrant: cluster.quadrant },
+      data: { quadrant: qCluster.quadrant },
       draggable: false,
       selectable: false,
       zIndex: -1,
     });
 
-    const sectorById = new Map(cluster.quadrant.sectors.map((s) => [`sector-${s.id}`, s]));
-    const rewardById = new Map(
-      cluster.quadrant.sectors.flatMap((s) => s.rewards.map((r): [string, Reward] => [`reward-${r.id}`, r]))
-    );
+    qCluster.sectors.forEach(({ cluster: sCluster, x: sx, y: sy }) => {
+      const sectorGroupId = `sector-${sCluster.sector.id}`;
+      const sectorRelX = CLUSTER_PADDING + sx;
+      const sectorRelY = CLUSTER_PADDING + QUADRANT_LABEL_SPACE + sy;
+      const sectorWidth = sCluster.width + SECTOR_PADDING * 2;
+      const sectorHeight = sCluster.height + SECTOR_PADDING * 2 + SECTOR_LABEL_SPACE;
 
-    cluster.nodes.forEach((n) => {
-      const relX = CLUSTER_PADDING + n.x;
-      const relY = CLUSTER_PADDING + LABEL_SPACE + n.y;
-      absoluteRects.set(n.id, { x: groupX + relX, y: groupY + relY, width: n.width, height: n.height });
+      nodes.push({
+        id: sectorGroupId,
+        type: 'sectorGroup',
+        parentId: groupId,
+        extent: 'parent',
+        position: { x: sectorRelX, y: sectorRelY },
+        style: { width: sectorWidth, height: sectorHeight },
+        width: sectorWidth,
+        height: sectorHeight,
+        data: { sector: sCluster.sector },
+        draggable: false,
+        selectable: false,
+        zIndex: -0.5,
+      });
 
-      if (sectorById.has(n.id)) {
-        const sector = sectorById.get(n.id)!;
-        nodes.push({
-          id: n.id,
-          type: 'squadNode',
-          parentId: groupId,
-          extent: 'parent',
-          position: { x: relX, y: relY },
-          style: { width: n.width },
+      sCluster.nodes.forEach((n) => {
+        const relX = SECTOR_PADDING + n.x;
+        const relY = SECTOR_PADDING + SECTOR_LABEL_SPACE + n.y;
+        absoluteRects.set(n.id, {
+          x: groupX + sectorRelX + relX,
+          y: groupY + sectorRelY + relY,
           width: n.width,
           height: n.height,
-          data: { sector, quadrantColor: cluster.quadrant.color },
-          // above every edge (see below), so a card's own content always
-          // paints over a line that happens to pass near/behind it
-          zIndex: 1,
         });
-      } else if (rewardById.has(n.id)) {
-        const reward = rewardById.get(n.id)!;
-        nodes.push({
-          id: n.id,
-          type: 'rewardNode',
-          parentId: groupId,
-          extent: 'parent',
-          position: { x: relX, y: relY },
-          style: { width: n.width },
-          width: n.width,
-          height: n.height,
-          data: { reward, quadrantColor: cluster.quadrant.color },
-          zIndex: 1,
-        });
-      }
+
+        if (systemById.has(n.id)) {
+          nodes.push({
+            id: n.id,
+            type: 'systemNode',
+            parentId: sectorGroupId,
+            extent: 'parent',
+            position: { x: relX, y: relY },
+            style: { width: n.width },
+            width: n.width,
+            height: n.height,
+            data: { system: systemById.get(n.id)! },
+            // above every edge (see below), so a card's own content always
+            // paints over a line that happens to pass near/behind it
+            zIndex: 1,
+          });
+        } else if (waypointById.has(n.id)) {
+          nodes.push({
+            id: n.id,
+            type: 'waypointNode',
+            parentId: sectorGroupId,
+            extent: 'parent',
+            position: { x: relX, y: relY },
+            style: { width: n.width },
+            width: n.width,
+            height: n.height,
+            data: { waypoint: waypointById.get(n.id)! },
+            zIndex: 1,
+          });
+        }
+      });
     });
   });
 
-  // Reward edges are always a short same-quadrant drop from a sector straight
-  // down to its own reward - dagre already lays those out with nothing else
-  // in between, so the plain built-in smoothstep is fine as-is.
-  const rewardFlowEdges: Edge[] = rewardEdges.map((e) => ({
+  // Unlock edges are usually a short same-sector drop from a System straight
+  // down to its own Waypoint - dagre already lays those out with nothing
+  // else in between, so the plain built-in smoothstep is fine as-is.
+  const unlockFlowEdges: Edge[] = unlockEdges.map((e) => ({
     id: e.id,
     source: e.source,
     target: e.target,
@@ -545,27 +681,26 @@ export function layoutGraph({ quadrants, sectorEdges, rewardEdges }: DeriveGraph
     style: { stroke: 'var(--text-dim)' },
   }));
 
-  // Sector edges (especially cross-quadrant ones) routinely have to travel
-  // past OTHER sectors/rewards that sit between source and target - React
-  // Flow's built-in smoothstep has no idea those cards exist and will draw
-  // straight through/behind them, which reads as "the line got lost" or
-  // "everything looks connected". routeOrthogonal knows the exact rect of
-  // every card on the canvas and detours the line around whichever ones are
-  // in the way, the same way the reference guide's hand-routed lines duck
-  // around cards instead of crossing them. Colored by the *target* quadrant,
-  // so a line reads as "this is inbound to quadrant X" rather than a single
-  // undifferentiated amber for every cross-quadrant connection.
-  const sectorFlowEdges: Edge[] = sectorEdges.map((e) => {
+  // Prerequisite edges (especially cross-sector/cross-quadrant ones)
+  // routinely have to travel past OTHER systems/waypoints that sit between
+  // source and target - React Flow's built-in smoothstep has no idea those
+  // cards exist and will draw straight through/behind them, which reads as
+  // "the line got lost" or "everything looks connected". routeOrthogonal
+  // knows the exact rect of every card on the canvas (including Sector
+  // boxes' own footprint, via their member cards) and detours the line
+  // around whichever ones are in the way, the same way the reference
+  // guide's hand-routed lines duck around cards instead of crossing them.
+  // Colored by the *target* System's Sector, so a line reads as "this is
+  // inbound to sector X."
+  const prerequisiteFlowEdges: Edge[] = prerequisiteEdges.map((e) => {
     const sourceRect = absoluteRects.get(e.source);
     const targetRect = absoluteRects.get(e.target);
-    const color =
-      (e.targetQuadrantId != null ? quadrantColorById.get(e.targetQuadrantId) : undefined) ??
-      quadrantColorById.get(e.sourceQuadrantId) ??
-      '#666';
+    const color = nodeColorById.get(e.target) ?? nodeColorById.get(e.source) ?? '#666';
     const baseStyle = { stroke: color, strokeWidth: 2 };
+    const crossesBoundary = e.crossQuadrant || e.crossSector;
 
     if (!sourceRect || !targetRect) {
-      // shouldn't happen (every sector has a resolved rect), but degrade to
+      // shouldn't happen (every system has a resolved rect), but degrade to
       // the plain router rather than dropping the edge
       return {
         id: e.id,
@@ -573,8 +708,8 @@ export function layoutGraph({ quadrants, sectorEdges, rewardEdges }: DeriveGraph
         target: e.target,
         type: 'smoothstep',
         pathOptions: { borderRadius: 12 },
-        animated: e.crossQuadrant,
-        zIndex: e.crossQuadrant ? 0.5 : 0,
+        animated: crossesBoundary,
+        zIndex: crossesBoundary ? 0.5 : 0,
         style: baseStyle,
       };
     }
@@ -587,15 +722,15 @@ export function layoutGraph({ quadrants, sectorEdges, rewardEdges }: DeriveGraph
       id: e.id,
       source: e.source,
       target: e.target,
-      type: 'routedSector',
-      data: { path: buildRoutedSectorEdgePath(sourceRect, targetRect, obstacles) },
-      animated: e.crossQuadrant,
-      zIndex: e.crossQuadrant ? 0.5 : 0,
+      type: 'routedPrerequisite',
+      data: { path: buildRoutedPrerequisiteEdgePath(sourceRect, targetRect, obstacles) },
+      animated: crossesBoundary,
+      zIndex: crossesBoundary ? 0.5 : 0,
       style: baseStyle,
     };
   });
 
-  return { nodes, edges: [...rewardFlowEdges, ...sectorFlowEdges] };
+  return { nodes, edges: [...unlockFlowEdges, ...prerequisiteFlowEdges] };
 }
 
 export function buildFlowGraph(starChart: StarChart): { nodes: Node[]; edges: Edge[] } {

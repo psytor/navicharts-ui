@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import {
   TierBadge, EnergyBadge, CurrencyBadge, OmicronBadge, LstBadge, StatusDot, UnitPortrait,
-  derivedEnergyTypes, UNIT_REWARD_TYPES,
+  derivedEnergyTypes, UNIT_WAYPOINT_TYPES,
 } from './Badge';
 import { api } from '../api';
-import type { Sector, SectorRequirement, Reward } from '../types';
+import type { System, SystemRequirement, Waypoint } from '../types';
 
-function RequirementRow({ req }: { req: SectorRequirement }) {
+function RequirementRow({ req }: { req: SystemRequirement }) {
   return (
     <div className="requirement-row">
       <StatusDot met={req.met} />
@@ -21,34 +21,38 @@ function RequirementRow({ req }: { req: SectorRequirement }) {
   );
 }
 
-// No manual toggle for any reward type - unit-shaped rewards
+// No manual toggle for any waypoint type - unit-shaped waypoints
 // (character_unlock/ship_unlock/capital_ship) show a read-only dot derived
 // server-side from the roster snapshot; assault_battle/feature_unlock
-// rewards have no completion signal at all and just display plainly.
-export function RewardRow({ reward }: { reward: Reward }) {
-  const isUnitReward = UNIT_REWARD_TYPES.has(reward.reward_type);
+// waypoints have no completion signal at all and just display plainly.
+export function WaypointRow({ waypoint }: { waypoint: Waypoint }) {
+  const isUnitWaypoint = UNIT_WAYPOINT_TYPES.has(waypoint.waypoint_type);
   return (
     <div className="reward-checkbox">
-      {isUnitReward && <StatusDot met={reward.completed} />}
-      <UnitPortrait unit={reward.unit} />
+      {isUnitWaypoint && <StatusDot met={waypoint.completed} />}
+      <UnitPortrait unit={waypoint.unit} />
       <span className="reward-name">
-        {reward.name}
-        <span className="reward-type"> ({reward.reward_type.replace(/_/g, ' ')})</span>
+        {waypoint.name}
+        <span className="reward-type"> ({waypoint.waypoint_type.replace(/_/g, ' ')})</span>
       </span>
-      {reward.unlocked_by && <span className="reward-unlocked-by">unlocked by {reward.unlocked_by}</span>}
+      {waypoint.unlocked_by.length > 0 && (
+        <span className="reward-unlocked-by">
+          unlocked by {waypoint.unlocked_by.map((s) => s.name || 'squad').join(', ')}
+        </span>
+      )}
     </div>
   );
 }
 
-export function SectorCard({ sector, onChange, canModify }: { sector: Sector; onChange: () => void; canModify: boolean }) {
-  const [notes, setNotes] = useState(sector.notes || '');
+export function SystemCard({ system, onChange, canModify }: { system: System; onChange: () => void; canModify: boolean }) {
+  const [notes, setNotes] = useState(system.notes || '');
   const [editingNotes, setEditingNotes] = useState(false);
   const [saving, setSaving] = useState(false);
 
   async function saveNotes() {
     setSaving(true);
     try {
-      await api.completeSector(sector.id, { notes });
+      await api.completeSystem(system.id, { notes });
       setEditingNotes(false);
       onChange();
     } finally {
@@ -57,19 +61,19 @@ export function SectorCard({ sector, onChange, canModify }: { sector: Sector; on
   }
 
   return (
-    <div className={`sector-card ${sector.status ? 'sector-complete' : ''}`}>
+    <div className={`sector-card ${system.status ? 'sector-complete' : ''}`}>
       <div className="requirements-list">
-        {sector.squad_name && <div className="squad-name">{sector.squad_name}</div>}
-        {sector.requirements.map((req) => (
+        {system.name && <div className="squad-name">{system.name}</div>}
+        {system.requirements.map((req) => (
           <RequirementRow key={req.id} req={req} />
         ))}
         <div className="sector-status-line">
-          <StatusDot met={sector.status} />
-          <span>{sector.status ? 'Requirements met' : 'Not yet met'}</span>
+          <StatusDot met={system.status} />
+          <span>{system.status ? 'Requirements met' : 'Not yet met'}</span>
         </div>
-        {sector.usable_for && <p className="usable-for">{sector.usable_for}</p>}
-        {sector.leads_to.length > 0 && (
-          <p className="leads-to">→ leads to: {sector.leads_to.join(', ')}</p>
+        {system.usable_for && <p className="usable-for">{system.usable_for}</p>}
+        {system.unlocks.length > 0 && (
+          <p className="leads-to">→ unlocks: {system.unlocks.map((w) => w.name).join(', ')}</p>
         )}
       </div>
 
@@ -88,9 +92,9 @@ export function SectorCard({ sector, onChange, canModify }: { sector: Sector; on
                 <button onClick={() => setEditingNotes(false)} disabled={saving}>Cancel</button>
               </div>
             </div>
-          ) : sector.notes ? (
+          ) : system.notes ? (
             <p className="notes-text" onClick={() => setEditingNotes(true)}>
-              {sector.notes}
+              {system.notes}
             </p>
           ) : (
             <button className="add-note-btn" onClick={() => setEditingNotes(true)}>
@@ -99,7 +103,7 @@ export function SectorCard({ sector, onChange, canModify }: { sector: Sector; on
           )}
         </div>
       )}
-      {!canModify && sector.notes && <div className="sector-notes"><p className="notes-text">{sector.notes}</p></div>}
+      {!canModify && system.notes && <div className="sector-notes"><p className="notes-text">{system.notes}</p></div>}
     </div>
   );
 }

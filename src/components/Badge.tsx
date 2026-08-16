@@ -1,12 +1,12 @@
-import type { Unit, SectorRequirement, FarmingLocation } from '../types';
+import type { Unit, SystemRequirement, FarmingLocation } from '../types';
 
-// character_unlock/ship_unlock/capital_ship rewards are always a specific
+// character_unlock/ship_unlock/capital_ship waypoints are always a specific
 // catalog unit - the backend derives their `completed` from the roster
 // snapshot (7*, same MAX_STARS threshold used everywhere else for "done
 // farming"), so these get a read-only status indicator, not a checkbox.
-// assault_battle/feature_unlock rewards have no such signal and no manual
+// assault_battle/feature_unlock waypoints have no such signal and no manual
 // tracking either - those render with no completion UI at all.
-export const UNIT_REWARD_TYPES = new Set(['character_unlock', 'ship_unlock', 'capital_ship']);
+export const UNIT_WAYPOINT_TYPES = new Set(['character_unlock', 'ship_unlock', 'capital_ship']);
 
 const currencyIcons = import.meta.glob('../assets/currency-icons/*.png', { eager: true, import: 'default' }) as Record<string, string>;
 
@@ -156,7 +156,7 @@ export function currencyLabel(key: string): string {
   return CURRENCY_LABELS[key] || key.replace(/_/g, ' ');
 }
 
-// Advisory only (not a farming requirement) - see SectorRequirement.lst_tiers.
+// Advisory only (not a farming requirement) - see SystemRequirement.lst_tiers.
 // Ordered lowest to highest grant power (Carbonite's Gear 12/3★ is below
 // even Bronzium's Relic 1/4★ - Anomalous is the odd one out, quest-only and
 // not on this purchasable ladder, so it stays last regardless).
@@ -334,7 +334,7 @@ export const CAMPAIGN_ENERGY: Record<string, string> = {
 // default, show every real energy type); [] means explicitly none were
 // checked (don't show any). Units with no real energy locations at all fall
 // back to the manually-set energy_type.
-export function derivedEnergyTypes(req: SectorRequirement): string[] {
+export function derivedEnergyTypes(req: SystemRequirement): string[] {
   const locs = req.unit?.farming_locations || [];
   const energyLocs = locs.filter((l) => CAMPAIGN_ENERGY[l.campaign_name]);
   if (energyLocs.length === 0) {
@@ -373,7 +373,7 @@ function CornerIcon({ corner, src, label, stackIndex = 0, textFallback }: Corner
 // needed), bottom-left farming energy type(s), bottom-right purchase
 // currency/currencies then any advisory LST shortcut(s) on top. Mirrors what
 // StepCard's RequirementRow shows as text pills, just as portrait overlays.
-export function RequirementPortrait({ req }: { req: SectorRequirement }) {
+export function RequirementPortrait({ req }: { req: SystemRequirement }) {
   const { unit, gear_tier: gearTier, relic_tier: relicTier } = req;
   const tierLabel = relicTier != null ? `R${relicTier}` : gearTier != null ? `G${gearTier}` : null;
   const tierVariant = relicTier != null ? 'relic' : 'gear';
