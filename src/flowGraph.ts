@@ -674,17 +674,22 @@ export function layoutGraph({ quadrants, prerequisiteEdges, unlockEdges }: Deriv
   // (e.g. a capital ship reward that lives in a different Sector than the
   // crew System that unlocks it) - animated the same way a boundary-
   // crossing prerequisite edge is, so "this line leaves the box" reads the
-  // same regardless of which edge kind it is.
-  const unlockFlowEdges: Edge[] = unlockEdges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    type: 'smoothstep',
-    pathOptions: { borderRadius: 12 },
-    animated: e.crossQuadrant || e.crossSector,
-    zIndex: 0,
-    style: { stroke: 'var(--color-text-secondary)' },
-  }));
+  // same regardless of which edge kind it is. Colored by the *target*
+  // Waypoint's Sector too, same "inbound to sector X" rule prerequisite
+  // edges use below, instead of a flat neutral grey.
+  const unlockFlowEdges: Edge[] = unlockEdges.map((e) => {
+    const color = nodeColorById.get(e.target) ?? nodeColorById.get(e.source) ?? '#666';
+    return {
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      type: 'smoothstep',
+      pathOptions: { borderRadius: 12 },
+      animated: e.crossQuadrant || e.crossSector,
+      zIndex: 0,
+      style: { stroke: color, strokeWidth: 2 },
+    };
+  });
 
   // Prerequisite edges (especially cross-sector/cross-quadrant ones)
   // routinely have to travel past OTHER systems/waypoints that sit between
