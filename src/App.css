@@ -83,7 +83,7 @@
 }
 
 .star-chart-picker-option.active {
-  color: var(--amber);
+  color: var(--color-primary);
 }
 
 .star-chart-picker-visibility {
@@ -126,9 +126,9 @@
 }
 
 .view-tabs button.active {
-  color: var(--amber);
-  border-bottom-color: var(--amber);
-  text-shadow: 0 0 12px rgba(232, 200, 90, 0.35);
+  color: var(--color-primary);
+  border-bottom-color: var(--color-primary);
+  text-shadow: 0 0 12px rgba(26, 115, 232, 0.35);
 }
 
 .episode-tabs {
@@ -158,8 +158,8 @@
 
 .episode-tabs button.active {
   color: var(--color-background);
-  background: var(--amber);
-  border-color: var(--amber);
+  background: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .episode-tab-add {
