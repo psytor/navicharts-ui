@@ -32,7 +32,7 @@ export function SectorEditor({ sector, sectorIndex, allSystems, allWaypoints, ot
     onChange({ ...sector, systems });
   }
   function removeSystem(i: number) {
-    // stale references (other systems' prerequisite_keys/unlock_keys, in
+    // stale references (other systems' downstream_keys/unlock_keys, in
     // this sector or any other) are cleaned up one level up, in
     // QuadrantBuilder's updateSector - it's the only place with visibility
     // across every sector in the quadrant.

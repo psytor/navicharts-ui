@@ -213,11 +213,13 @@ export interface SystemIn {
   unlock_waypoint_indices: number[];
   // absolute ids of already-existing Waypoints this System unlocks
   unlock_waypoint_ids: number[];
-  // indices into the flattened list of Systems in THIS SAME payload that
-  // must be built before this one
-  prerequisite_system_indices: number[];
-  // absolute ids of already-existing Systems that must be built before this one
-  prerequisite_system_ids: number[];
+  // indices into the flattened (quadrant-wide) list of Systems in THIS SAME
+  // payload that this System is a prerequisite for - i.e. what it "feeds
+  // into", declared from the upstream/prerequisite System's own form
+  downstream_indices: number[];
+  // absolute ids of already-existing Systems (in this or another quadrant)
+  // this System feeds into
+  downstream_system_ids: number[];
 }
 
 export interface SectorIn {

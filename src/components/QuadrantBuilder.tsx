@@ -45,8 +45,8 @@ function quadrantToFormState(quadrant: Quadrant): { name: string; sectors: Draft
         // another quadrant) keep their absolute id in the separate field
         unlock_keys: s.unlocks.filter((w) => waypointIds.has(w.id)).map((w) => w.id),
         unlock_waypoint_ids: s.unlocks.filter((w) => !waypointIds.has(w.id)).map((w) => w.id),
-        prerequisite_keys: s.prerequisites.filter((p) => systemIds.has(p.id)).map((p) => p.id),
-        prerequisite_system_ids: s.prerequisites.filter((p) => !systemIds.has(p.id)).map((p) => p.id),
+        downstream_keys: s.enables.filter((e) => systemIds.has(e.id)).map((e) => e.id),
+        downstream_system_ids: s.enables.filter((e) => !systemIds.has(e.id)).map((e) => e.id),
       })),
       waypoints: sector.waypoints.map((w) => ({
         _key: w.id, name: w.name, waypoint_type: w.waypoint_type, unit: w.unit || null, event: w.event || null,
@@ -94,7 +94,7 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
     // A single System or Waypoint removed inside SectorEditor/SystemEditor
     // (as opposed to the whole sector, see removeSector below) can leave
     // OTHER systems - in this sector or any other - with a stale
-    // unlock_keys/prerequisite_keys reference. This is the only place with
+    // unlock_keys/downstream_keys reference. This is the only place with
     // visibility across every sector, so the cleanup happens here rather
     // than inside the child editors.
     const oldSector = sectors[i];
@@ -116,7 +116,7 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
           systems: sector.systems.map((sy) => ({
             ...sy,
             unlock_keys: sy.unlock_keys.filter((k) => !removedWaypointKeys.has(k)),
-            prerequisite_keys: sy.prerequisite_keys.filter((k) => !removedSystemKeys.has(k)),
+            downstream_keys: sy.downstream_keys.filter((k) => !removedSystemKeys.has(k)),
           })),
         };
       })
@@ -133,7 +133,7 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
           systems: sector.systems.map((s) => ({
             ...s,
             unlock_keys: s.unlock_keys.filter((k) => !removedWaypointKeys.has(k)),
-            prerequisite_keys: s.prerequisite_keys.filter((k) => !removedSystemKeys.has(k)),
+            downstream_keys: s.downstream_keys.filter((k) => !removedSystemKeys.has(k)),
           })),
         }))
     );
@@ -188,10 +188,10 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
               .map((key) => allWaypoints.findIndex((w) => w.waypoint._key === key))
               .filter((idx) => idx !== -1),
             unlock_waypoint_ids: s.unlock_waypoint_ids,
-            prerequisite_system_indices: s.prerequisite_keys
+            downstream_indices: s.downstream_keys
               .map((key) => allSystems.findIndex((sy) => sy.system._key === key))
               .filter((idx) => idx !== -1),
-            prerequisite_system_ids: s.prerequisite_system_ids,
+            downstream_system_ids: s.downstream_system_ids,
           })),
           waypoints: sector.waypoints
             .filter((w) => w.name.trim())

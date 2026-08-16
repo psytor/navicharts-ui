@@ -62,9 +62,10 @@ export interface DraftSystem {
   // split as the sector/system picks below
   unlock_keys: (string | number)[];
   unlock_waypoint_ids: number[];
-  // system prerequisites (systems that must be built before this one)
-  prerequisite_keys: (string | number)[];
-  prerequisite_system_ids: number[];
+  // systems this one feeds into (declared from the upstream/prerequisite
+  // System's own form, same as the old project's downstream_keys)
+  downstream_keys: (string | number)[];
+  downstream_system_ids: number[];
 }
 
 export interface DraftSector {
@@ -117,8 +118,8 @@ export function emptySystem(): DraftSystem {
     requirements: [emptyRequirement()],
     unlock_keys: [],
     unlock_waypoint_ids: [],
-    prerequisite_keys: [],
-    prerequisite_system_ids: [],
+    downstream_keys: [],
+    downstream_system_ids: [],
   };
 }
 
@@ -134,9 +135,9 @@ export function emptySector(): DraftSector {
 }
 
 // Flattened (quadrant-wide, sector-order-then-within-sector-order) view of
-// every System/Waypoint currently in the form - this is the pool a "Requires"/
+// every System/Waypoint currently in the form - this is the pool a "Feeds into"/
 // "Unlocks" picker offers, and its order is exactly what unlock_waypoint_indices/
-// prerequisite_system_indices get resolved against at submit time.
+// downstream_indices get resolved against at submit time.
 export interface FlatSystemEntry { sectorIndex: number; system: DraftSystem; }
 export interface FlatWaypointEntry { sectorIndex: number; waypoint: DraftWaypoint; }
 

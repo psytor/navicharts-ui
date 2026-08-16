@@ -278,7 +278,7 @@ interface SystemEditorProps {
 }
 
 export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants, units, onChange, onRemove, onMove, isFirst, isLast }: SystemEditorProps) {
-  const [expandedPrereqQuadrantIds, setExpandedPrereqQuadrantIds] = useState<number[]>([]);
+  const [expandedDownstreamQuadrantIds, setExpandedDownstreamQuadrantIds] = useState<number[]>([]);
   const [expandedUnlockQuadrantIds, setExpandedUnlockQuadrantIds] = useState<number[]>([]);
 
   function updateReq(i: number, patch: DraftRequirement) {
@@ -288,19 +288,19 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
   function removeReq(i: number) {
     onChange({ ...system, requirements: system.requirements.filter((_, idx) => idx !== i) });
   }
-  function togglePrerequisite(targetKey: string | number) {
-    const has = system.prerequisite_keys.includes(targetKey);
-    const prerequisite_keys = has
-      ? system.prerequisite_keys.filter((k) => k !== targetKey)
-      : [...system.prerequisite_keys, targetKey];
-    onChange({ ...system, prerequisite_keys });
+  function toggleDownstream(targetKey: string | number) {
+    const has = system.downstream_keys.includes(targetKey);
+    const downstream_keys = has
+      ? system.downstream_keys.filter((k) => k !== targetKey)
+      : [...system.downstream_keys, targetKey];
+    onChange({ ...system, downstream_keys });
   }
-  function togglePrerequisiteSystemId(targetId: number) {
-    const has = system.prerequisite_system_ids.includes(targetId);
-    const prerequisite_system_ids = has
-      ? system.prerequisite_system_ids.filter((id) => id !== targetId)
-      : [...system.prerequisite_system_ids, targetId];
-    onChange({ ...system, prerequisite_system_ids });
+  function toggleDownstreamSystemId(targetId: number) {
+    const has = system.downstream_system_ids.includes(targetId);
+    const downstream_system_ids = has
+      ? system.downstream_system_ids.filter((id) => id !== targetId)
+      : [...system.downstream_system_ids, targetId];
+    onChange({ ...system, downstream_system_ids });
   }
   function toggleUnlock(targetKey: string | number) {
     const has = system.unlock_keys.includes(targetKey);
@@ -372,13 +372,13 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
 
       {(otherSystems.length > 0 || otherQuadrants?.length > 0) && (
         <div className="downstream-picker">
-          <span className="downstream-label">Requires (built first):</span>
+          <span className="downstream-label">Feeds into:</span>
           {otherSystems.map((entry) => (
             <label key={entry.system._key} className="downstream-option">
               <input
                 type="checkbox"
-                checked={system.prerequisite_keys.includes(entry.system._key)}
-                onChange={() => togglePrerequisite(entry.system._key)}
+                checked={system.downstream_keys.includes(entry.system._key)}
+                onChange={() => toggleDownstream(entry.system._key)}
               />
               Sector {entry.sectorIndex + 1} ({entry.system.name || 'system'})
             </label>
@@ -388,17 +388,17 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
               <button
                 type="button"
                 className="downstream-quadrant-toggle"
-                onClick={() => setExpandedPrereqQuadrantIds((ids) => ids.includes(q.id) ? ids.filter((id) => id !== q.id) : [...ids, q.id])}
+                onClick={() => setExpandedDownstreamQuadrantIds((ids) => ids.includes(q.id) ? ids.filter((id) => id !== q.id) : [...ids, q.id])}
               >
-                {expandedPrereqQuadrantIds.includes(q.id) ? '▾' : '▸'} {q.name}
+                {expandedDownstreamQuadrantIds.includes(q.id) ? '▾' : '▸'} {q.name}
               </button>
-              {expandedPrereqQuadrantIds.includes(q.id) &&
+              {expandedDownstreamQuadrantIds.includes(q.id) &&
                 q.sectors.flatMap((s) => s.systems).map((sy) => (
                   <label key={sy.id} className="downstream-option downstream-option-cross">
                     <input
                       type="checkbox"
-                      checked={system.prerequisite_system_ids.includes(sy.id)}
-                      onChange={() => togglePrerequisiteSystemId(sy.id)}
+                      checked={system.downstream_system_ids.includes(sy.id)}
+                      onChange={() => toggleDownstreamSystemId(sy.id)}
                     />
                     {sy.name || 'system'}
                   </label>
