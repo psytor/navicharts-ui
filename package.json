@@ -14,9 +14,9 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "astrogators-shared-ui": "^0.10.0",
     "@dagrejs/dagre": "^3.0.0",
     "@xyflow/react": "^12.11.2",
+    "astrogators-shared-ui": "^0.10.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
