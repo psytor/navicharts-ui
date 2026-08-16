@@ -64,11 +64,17 @@ function SquadSlot({ label, unit, isSpecial, onDrop, onClear }: SquadSlotProps) 
     >
       <span className="squad-slot-label">{label}</span>
       {unit ? (
-        <Card chamfered chamferSize="sm" padding="sm" className="unit-card">
-          <UnitPortrait unit={unit} />
-          <span className="unit-card-name">{unit.name}</span>
+        <>
+          {/* Sibling of the Card, not a child - the clear button overhangs
+              the top-right corner (top:-6px/right:-6px) and would otherwise
+              get sliced off by the chamfer's clip-path. .squad-slot (the
+              parent) is already position:relative. */}
+          <Card chamfered chamferSize="sm" padding="sm" className="unit-card">
+            <UnitPortrait unit={unit} />
+            <span className="unit-card-name">{unit.name}</span>
+          </Card>
           <button type="button" className="squad-slot-clear" title="Remove" onClick={onClear}>×</button>
-        </Card>
+        </>
       ) : (
         <div className="squad-slot-placeholder">Drag unit here</div>
       )}
@@ -281,19 +287,20 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
       {squad.notes && <p className="squad-card-notes">{squad.notes}</p>}
       <div className="location-card-grid">
         {sortedMembers.map((m: SquadMember) => (
-          <Card
-            key={m.id}
-            chamfered
-            chamferSize="sm"
-            padding="sm"
-            className={`unit-card${m.is_leader ? ' squad-member-special' : ''}`}
-          >
-            <UnitPortrait unit={m.unit} />
+          <div key={m.id} className="unit-card-slot">
             {m.is_leader && (
               <span className="squad-special-badge" title={cfg.specialLabel}>{cfg.badge}</span>
             )}
-            <span className="unit-card-name">{m.unit.name}</span>
-          </Card>
+            <Card
+              chamfered
+              chamferSize="sm"
+              padding="sm"
+              className={`unit-card${m.is_leader ? ' squad-member-special' : ''}`}
+            >
+              <UnitPortrait unit={m.unit} />
+              <span className="unit-card-name">{m.unit.name}</span>
+            </Card>
+          </div>
         ))}
       </div>
     </Card>

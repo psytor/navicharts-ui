@@ -156,7 +156,7 @@ export function CharacterCard({ unit }: { unit: UnitWithRoster }) {
   const stars = snap?.stars ?? 0;
 
   return (
-    <Card chamfered chamferSize="sm" hoverable padding="sm" className={`character-card ${owned ? '' : 'character-card--unowned'}`}>
+    <Card chamfered chamferSize="sm" hoverable padding="none" className={`character-card ${owned ? '' : 'character-card--unowned'}`}>
       <GearRingPortrait unit={unit} snapshot={snap} />
       <div className="character-card-stars">
         {Array.from({ length: 7 }, (_, i) => (

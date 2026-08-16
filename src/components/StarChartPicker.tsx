@@ -79,9 +79,9 @@ export function StarChartPicker({ myCharts, curatedCharts, activeStarChartId, on
 
   return (
     <div className="star-chart-picker">
-      <button className="star-chart-picker-toggle" onClick={() => setOpen(!open)}>
+      <Button variant="outline" size="sm" className="star-chart-picker-toggle" onClick={() => setOpen(!open)}>
         Star Charts: {active?.name ?? '...'} ▾
-      </button>
+      </Button>
       {open && (
         <div className="star-chart-picker-panel chamfered-box-lg">
           {myCharts.length > 0 && (
@@ -115,7 +115,7 @@ export function StarChartPicker({ myCharts, curatedCharts, activeStarChartId, on
           {creating ? (
             <NewStarChartForm onCreated={handleCreated} onCancel={() => setCreating(false)} />
           ) : (
-            <button className="star-chart-picker-new" onClick={() => setCreating(true)}>+ New Star Chart</button>
+            <Button variant="outline" size="sm" className="star-chart-picker-new" onClick={() => setCreating(true)}>+ New Star Chart</Button>
           )}
         </div>
       )}

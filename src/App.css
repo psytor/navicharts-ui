@@ -38,20 +38,6 @@
   font-family: var(--font-mono);
 }
 
-.sync-controls button {
-  background: var(--amber);
-  color: #171308;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 14px;
-}
-
-.sync-controls button:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
 .sync-message {
   font-size: 13px;
   color: var(--color-text-secondary);
@@ -107,7 +93,6 @@
 
 .star-chart-picker-new {
   margin-top: 8px;
-  opacity: 0.8;
 }
 
 .app-error, .app-loading {
@@ -252,8 +237,11 @@
   gap: 8px;
 }
 
-.unit-card {
+.unit-card-slot {
   position: relative;
+}
+
+.unit-card {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -302,7 +290,7 @@
   flex-direction: column;
   align-items: center;
   width: 128px;
-  padding: 8px;
+  padding: 8px 0;
   background: var(--color-surface);
   text-align: center;
 }
@@ -449,6 +437,7 @@
   flex-direction: column;
   align-items: center;
   width: 128px;
+  padding: 8px 0;
   text-align: center;
 }
 

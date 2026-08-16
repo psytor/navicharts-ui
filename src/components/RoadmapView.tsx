@@ -257,20 +257,26 @@ function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?
   const stars = snapshots.get(unit.id)?.stars ?? 0;
   const detail = locationDetailLabel(entry.locationDetail);
   return (
-    <Card chamfered chamferSize="sm" hoverable padding="sm" className="unit-card">
+    <div className="unit-card-slot">
+      {/* Rank badge is a sibling, not a child, of the chamfered Card - Card's
+          clip-path clips its own content, so a badge meant to overhang the
+          corner (top:-6px/left:-6px) has to sit outside the clipped box to
+          avoid being sliced off by the chamfer cut. */}
       {rank != null && <PriorityBadge rank={rank} />}
-      {/* Shipment boxes group several currencies under one shop (see
-          buildLocations) - the corner pin (same overlay RequirementPortrait
-          uses in Visualise) points back to the exact currency this unit
-          needs, since the shop name alone doesn't say which token. */}
-      <div className="unit-card-portrait-wrap">
-        <UnitPortrait unit={unit} />
-        <CurrencyCornerBadge currencyType={entry.currencyKey} />
-      </div>
-      <span className="unit-card-name">{unit.name}</span>
-      <span className="unit-card-stars">{stars > 0 ? `${stars}★` : '-'}</span>
-      {detail && <span className="unit-card-location-detail">{detail}</span>}
-    </Card>
+      <Card chamfered chamferSize="sm" hoverable padding="sm" className="unit-card">
+        {/* Shipment boxes group several currencies under one shop (see
+            buildLocations) - the corner pin (same overlay RequirementPortrait
+            uses in Visualise) points back to the exact currency this unit
+            needs, since the shop name alone doesn't say which token. */}
+        <div className="unit-card-portrait-wrap">
+          <UnitPortrait unit={unit} />
+          <CurrencyCornerBadge currencyType={entry.currencyKey} />
+        </div>
+        <span className="unit-card-name">{unit.name}</span>
+        <span className="unit-card-stars">{stars > 0 ? `${stars}★` : '-'}</span>
+        {detail && <span className="unit-card-location-detail">{detail}</span>}
+      </Card>
+    </div>
   );
 }
 
@@ -365,16 +371,18 @@ function GearUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank: 
   const owned = !!snap;
 
   return (
-    <div
-      className={`gear-order-card chamfered-box-sm ${owned ? '' : 'gear-order-card--unowned'}`}
-      title={owned ? undefined : 'Not unlocked yet - farm shards to unlock before gearing'}
-    >
+    <div className="unit-card-slot">
       <PriorityBadge rank={rank} />
-      <GearRingPortrait unit={unit} snapshot={snap} />
-      <span className="unit-card-name">{unit.name}</span>
-      <span className="unit-card-progress">
-        {owned ? gearProgressLabel(req, snap) : 'Not unlocked yet'}
-      </span>
+      <div
+        className={`gear-order-card chamfered-box-sm ${owned ? '' : 'gear-order-card--unowned'}`}
+        title={owned ? undefined : 'Not unlocked yet - farm shards to unlock before gearing'}
+      >
+        <GearRingPortrait unit={unit} snapshot={snap} />
+        <span className="unit-card-name">{unit.name}</span>
+        <span className="unit-card-progress">
+          {owned ? gearProgressLabel(req, snap) : 'Not unlocked yet'}
+        </span>
+      </div>
     </div>
   );
 }

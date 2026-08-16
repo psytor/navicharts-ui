@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { NavBar, Container, Footer, Card, useAuth } from 'astrogators-shared-ui';
+import { NavBar, Container, Footer, Card, Button, useAuth } from 'astrogators-shared-ui';
 import { api } from './api';
 import { Quadrant } from './components/Quadrant';
 import { QuadrantBuilder } from './components/QuadrantBuilder';
@@ -165,9 +165,9 @@ function App() {
         onSwitch={switchStarChart}
         onCreated={handleStarChartCreated}
       />
-      <button onClick={handleSync} disabled={syncing}>
+      <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
         {syncing ? 'Syncing...' : 'Sync Roster'}
-      </button>
+      </Button>
     </div>
   );
 
