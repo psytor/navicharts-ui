@@ -1,3 +1,4 @@
+import { Button, Input, Select } from 'astrogators-shared-ui';
 import type { Unit, GameEvent, Quadrant } from '../types';
 import { SystemEditor } from './SystemEditor';
 import { WaypointEditor } from './WaypointEditor';
@@ -67,17 +68,18 @@ export function SectorEditor({ sector, sectorIndex, allSystems, allWaypoints, ot
       </div>
 
       <div className="quadrant-builder-header">
-        <input
+        <Input
           type="text"
           placeholder="Sector name (e.g. Start Here)"
           value={sector.name}
           onChange={(e) => onChange({ ...sector, name: e.target.value })}
+          className="quadrant-builder-header-input"
         />
-        <select value={sector.color} onChange={(e) => onChange({ ...sector, color: e.target.value })}>
+        <Select value={sector.color} onChange={(e) => onChange({ ...sector, color: e.target.value })}>
           {SECTOR_COLORS.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
-        </select>
+        </Select>
       </div>
       <textarea
         placeholder="Sector notes (optional)"
@@ -101,13 +103,15 @@ export function SectorEditor({ sector, sectorIndex, allSystems, allWaypoints, ot
           isLast={i === sector.systems.length - 1}
         />
       ))}
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         className="sector-add-btn"
         onClick={() => onChange({ ...sector, systems: [...sector.systems, emptySystem()] })}
       >
         + Add system
-      </button>
+      </Button>
 
       <div className="unlocks-editor">
         <span className="unlocks-label">Waypoints:</span>
@@ -121,13 +125,15 @@ export function SectorEditor({ sector, sectorIndex, allSystems, allWaypoints, ot
             onRemove={() => removeWaypoint(i)}
           />
         ))}
-        <button
+        <Button
           type="button"
+          variant="outline"
+          size="sm"
           className="sector-add-btn"
           onClick={() => onChange({ ...sector, waypoints: [...sector.waypoints, emptyWaypoint()] })}
         >
           + Add waypoint
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Input } from 'astrogators-shared-ui';
 import { retryableImgOnError } from './Badge';
 import type { GameEvent } from '../types';
 
@@ -37,7 +38,7 @@ export function EventPicker({ events, value, onChange }: EventPickerProps) {
 
   return (
     <div className="unit-picker">
-      <input
+      <Input
         type="text"
         placeholder="Search Assault Battle by name..."
         value={query}

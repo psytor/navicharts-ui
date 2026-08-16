@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Button, Input } from 'astrogators-shared-ui';
 import { api } from '../api';
 import { SectorEditor } from './SectorEditor';
 import {
@@ -222,9 +223,9 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
 
   if (!isEditing && !open) {
     return (
-      <button className="add-quadrant-toggle" onClick={() => setOpen(true)}>
+      <Button variant="outline" fullWidth className="add-quadrant-toggle" onClick={() => setOpen(true)}>
         + Add quadrant
-      </button>
+      </Button>
     );
   }
 
@@ -232,11 +233,12 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
     <div className="add-quadrant-panel">
       {isEditing && <div className="quadrant-builder-edit-label">Editing quadrant</div>}
       <div className="quadrant-builder-header">
-        <input
+        <Input
           type="text"
           placeholder="Quadrant name (e.g. Episode 1)"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          fullWidth
         />
       </div>
 
@@ -259,21 +261,22 @@ export function QuadrantBuilder({ starChartId, nextOrderIndex, onAdded, editingQ
       ))}
 
       <div className="add-sector-buttons">
-        <button type="button" onClick={() => setSectors([...sectors, emptySector()])}>+ Add sector</button>
+        <Button type="button" variant="outline" size="sm" onClick={() => setSectors([...sectors, emptySector()])}>+ Add sector</Button>
       </div>
 
       {error && <p className="add-quadrant-error">{error}</p>}
 
       <div className="add-quadrant-actions">
-        <button onClick={submit} disabled={saving || !name.trim()}>
+        <Button variant="primary" onClick={submit} disabled={saving || !name.trim()}>
           {saving ? 'Saving...' : isEditing ? 'Save changes' : 'Add quadrant'}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => (isEditing ? onCancelEdit?.() : setOpen(false))}
           disabled={saving}
         >
           Cancel
-        </button>
+        </Button>
       </div>
     </div>
   );

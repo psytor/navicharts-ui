@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, Input } from 'astrogators-shared-ui';
 import { UnitPicker } from './UnitPicker';
 import { CAMPAIGN_ENERGY, ENERGY_STYLES, CURRENCY_LABELS, CURRENCY_SHOPS, LST_TIERS, lstTierTitle } from './Badge';
 import type { Unit, Quadrant } from '../types';
@@ -329,17 +330,19 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
         </div>
       </div>
 
-      <input
+      <Input
         type="text"
         placeholder="Squad name (optional, e.g. Imperial Troopers)"
         value={system.name}
         onChange={(e) => onChange({ ...system, name: e.target.value })}
+        fullWidth
       />
-      <input
+      <Input
         type="text"
         placeholder="Usable for (optional, e.g. clears Forest Moon Assault Battle)"
         value={system.usable_for}
         onChange={(e) => onChange({ ...system, usable_for: e.target.value })}
+        fullWidth
       />
       {system.requirements.map((req, i) => (
         <RequirementEditor
@@ -350,13 +353,15 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
           onRemove={() => removeReq(i)}
         />
       ))}
-      <button
+      <Button
         type="button"
+        variant="outline"
+        size="sm"
         className="sector-add-btn"
         onClick={() => onChange({ ...system, requirements: [...system.requirements, emptyRequirement()] })}
       >
         + add unit
-      </button>
+      </Button>
 
       <textarea
         placeholder="Notes (optional)"

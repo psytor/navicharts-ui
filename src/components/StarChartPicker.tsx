@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Button, Input } from 'astrogators-shared-ui';
 import { api } from '../api';
 import type { StarChartListItem, StarChartCreateIn } from '../types';
 
@@ -29,22 +30,24 @@ function NewStarChartForm({ onCreated, onCancel }: NewStarChartFormProps) {
 
   return (
     <div className="new-episode-form">
-      <input
+      <Input
         type="text"
         placeholder="Star Chart name (e.g. 2026 F2P Farming Guide)"
         value={name}
         onChange={(e) => setName(e.target.value)}
+        fullWidth
       />
-      <input
+      <Input
         type="text"
         placeholder="Source (optional)"
         value={source}
         onChange={(e) => setSource(e.target.value)}
+        fullWidth
       />
-      <button onClick={submit} disabled={saving || !name.trim()}>
+      <Button variant="primary" size="sm" onClick={submit} disabled={saving || !name.trim()}>
         {saving ? 'Creating...' : 'Create'}
-      </button>
-      <button onClick={onCancel} disabled={saving}>Cancel</button>
+      </Button>
+      <Button variant="outline" size="sm" onClick={onCancel} disabled={saving}>Cancel</Button>
       {error && <p className="add-quadrant-error">{error}</p>}
     </div>
   );
@@ -80,7 +83,7 @@ export function StarChartPicker({ myCharts, curatedCharts, activeStarChartId, on
         Star Charts: {active?.name ?? '...'} ▾
       </button>
       {open && (
-        <div className="star-chart-picker-panel bracket-panel">
+        <div className="star-chart-picker-panel chamfered-box-lg">
           {myCharts.length > 0 && (
             <>
               <div className="star-chart-picker-group-label">Mine</div>

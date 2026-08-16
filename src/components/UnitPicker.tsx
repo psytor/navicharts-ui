@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Input } from 'astrogators-shared-ui';
 import { retryableImgOnError } from './Badge';
 import type { Unit } from '../types';
 
@@ -37,7 +38,7 @@ export function UnitPicker({ units, value, onChange }: UnitPickerProps) {
 
   return (
     <div className="unit-picker">
-      <input
+      <Input
         type="text"
         placeholder="Search unit by name..."
         value={query}
