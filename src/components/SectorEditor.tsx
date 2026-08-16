@@ -1,6 +1,6 @@
 import { Button, Input, Select } from 'astrogators-shared-ui';
-import type { Unit, GameEvent, Quadrant } from '../types';
-import { SystemEditor } from './SystemEditor';
+import type { Unit, GameEvent } from '../types';
+import { SystemEditor, type OtherSectorGroup } from './SystemEditor';
 import { WaypointEditor } from './WaypointEditor';
 import {
   SECTOR_COLORS, emptySystem, emptyWaypoint,
@@ -11,7 +11,7 @@ interface SectorEditorProps {
   sector: DraftSector;
   allSystems: FlatSystemEntry[];
   allWaypoints: FlatWaypointEntry[];
-  otherQuadrants: Quadrant[];
+  otherGroups: OtherSectorGroup[];
   units: Unit[];
   events: GameEvent[];
   onChange: (sector: DraftSector) => void;
@@ -21,21 +21,23 @@ interface SectorEditorProps {
 // and its Waypoints (rewards). A System's "Feeds into"/"Unlocks" pickers
 // (see SystemEditor) can reach systems/waypoints outside this Sector too
 // (sibling Sectors in the same Quadrant, or other Quadrants) via
-// otherQuadrants - see SectorEditorPanel, which builds allSystems/
-// allWaypoints/otherQuadrants scoped to just this Sector's editing session.
-// Standalone now (SectorEditorPanel owns fetch/save/cancel) - move/remove
-// live on the read-only SectorGroup card instead, same as Quadrant's own
-// move/delete controls living on its card, not inside QuadrantBuilder.
-export function SectorEditor({ sector, allSystems, allWaypoints, otherQuadrants, units, events, onChange }: SectorEditorProps) {
+// otherGroups, one group per Sector - see SectorEditorPanel, which builds
+// allSystems/allWaypoints/otherGroups scoped to just this Sector's editing
+// session. Standalone now (SectorEditorPanel owns fetch/save/cancel) -
+// move/remove live on the read-only SectorGroup card instead, same as
+// Quadrant's own move/delete controls living on its card, not inside
+// QuadrantBuilder.
+export function SectorEditor({ sector, allSystems, allWaypoints, otherGroups, units, events, onChange }: SectorEditorProps) {
   function updateSystem(i: number, patch: DraftSystem) {
     const systems = sector.systems.map((s, idx) => (idx === i ? patch : s));
     onChange({ ...sector, systems });
   }
   function removeSystem(i: number) {
-    // stale references (other systems' downstream_keys/unlock_keys, in
-    // this sector or any other) are cleaned up one level up, in
-    // QuadrantBuilder's updateSector - it's the only place with visibility
-    // across every sector in the quadrant.
+    // A sibling system's downstream_keys pointing at this one goes stale
+    // here (not eagerly cleaned up) - harmless, since SectorEditorPanel's
+    // submit() resolves downstream_keys against allSystems by _key and
+    // drops anything that no longer matches (see its downstream_indices
+    // mapping), so a dangling key never reaches the API.
     onChange({ ...sector, systems: sector.systems.filter((_, idx) => idx !== i) });
   }
   function moveSystem(i: number, direction: number) {
@@ -51,8 +53,8 @@ export function SectorEditor({ sector, allSystems, allWaypoints, otherQuadrants,
     onChange({ ...sector, waypoints });
   }
   function removeWaypoint(i: number) {
-    // see removeSystem above - stale unlock_keys referencing this waypoint
-    // are cleaned up in QuadrantBuilder's updateSector.
+    // see removeSystem above - same stale-key-gets-dropped-at-submit story
+    // for unlock_keys referencing this waypoint.
     onChange({ ...sector, waypoints: sector.waypoints.filter((_, idx) => idx !== i) });
   }
 
@@ -85,7 +87,7 @@ export function SectorEditor({ sector, allSystems, allWaypoints, otherQuadrants,
           system={system}
           allSystems={allSystems}
           allWaypoints={allWaypoints}
-          otherQuadrants={otherQuadrants}
+          otherGroups={otherGroups}
           units={units}
           onChange={(patch) => updateSystem(i, patch)}
           onRemove={() => removeSystem(i)}

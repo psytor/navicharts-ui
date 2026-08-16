@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from 'astrogators-shared-ui';
 import { api } from '../api';
 import { SectorEditor } from './SectorEditor';
+import type { OtherSectorGroup } from './SystemEditor';
 import {
   emptySector, sectorToFormState, flattenSystems, flattenWaypoints,
 } from './quadrantBuilderShared';
@@ -43,14 +44,23 @@ export function SectorEditorPanel({ starChartId, quadrantId, editingSector, next
   const allWaypoints = flattenWaypoints([sector]);
 
   // Everything outside THIS sector is reached via absolute id, grouped by
-  // Quadrant (same "expandable group" picker SystemEditor already renders
-  // for otherQuadrants) - the current Quadrant's own group has the sector
-  // being edited filtered out, so its own Systems don't also show up as
-  // "remote" targets of themselves. Quadrants left with no sectors after
-  // that filter are dropped so the picker doesn't show an empty group.
-  const otherQuadrants = allQuadrants
-    .map((q) => (q.id === quadrantId ? { ...q, sectors: q.sectors.filter((s) => s.id !== editingSector?.id) } : q))
-    .filter((q) => q.sectors.length > 0);
+  // Sector - one expandable group per Sector, not per Quadrant. Editing
+  // scope is a Sector now, so the local/remote picker boundary is the
+  // Sector boundary (matches the old project's Quadrant-scoped picker one
+  // level down) - grouping by Quadrant here would bundle sibling Sectors
+  // together and hide which one a target actually belongs to. A sibling
+  // in the SAME Quadrant is labeled with just its own name; a Sector in a
+  // DIFFERENT Quadrant gets the Quadrant name appended for context.
+  const otherGroups: OtherSectorGroup[] = allQuadrants.flatMap((q) =>
+    q.sectors
+      .filter((s) => s.id !== editingSector?.id)
+      .map((s) => ({
+        id: s.id,
+        label: q.id === quadrantId ? s.name : `${s.name} (${q.name})`,
+        systems: s.systems,
+        waypoints: s.waypoints,
+      }))
+  );
 
   async function submit() {
     setSaving(true);
@@ -121,7 +131,7 @@ export function SectorEditorPanel({ starChartId, quadrantId, editingSector, next
         sector={sector}
         allSystems={allSystems}
         allWaypoints={allWaypoints}
-        otherQuadrants={otherQuadrants}
+        otherGroups={otherGroups}
         units={units}
         events={events}
         onChange={setSector}

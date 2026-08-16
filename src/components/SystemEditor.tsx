@@ -2,7 +2,20 @@ import { useState } from 'react';
 import { Button, Input } from 'astrogators-shared-ui';
 import { UnitPicker } from './UnitPicker';
 import { CAMPAIGN_ENERGY, ENERGY_STYLES, CURRENCY_LABELS, CURRENCY_SHOPS, LST_TIERS, lstTierTitle } from './Badge';
-import type { Unit, Quadrant } from '../types';
+import type { Unit, System, Waypoint } from '../types';
+
+// One "remote" (outside the Sector being edited) target group - always one
+// Sector, never a whole Quadrant. Editing scope is a Sector now (see
+// SectorEditorPanel), so the local/remote picker boundary is the Sector
+// boundary, same as it was the Quadrant boundary back when Quadrant was
+// the editable unit - grouping by Quadrant here would bundle sibling
+// Sectors together and hide which one a target actually belongs to.
+export interface OtherSectorGroup {
+  id: number;
+  label: string;
+  systems: System[];
+  waypoints: Waypoint[];
+}
 import {
   ENERGY_OPTIONS, CURRENCY_OPTIONS, MIN_STARS_FOR_RELIC, emptyRequirement,
   type DraftRequirement, type DraftSystem, type FlatSystemEntry, type FlatWaypointEntry,
@@ -268,7 +281,7 @@ interface SystemEditorProps {
   system: DraftSystem;
   allSystems: FlatSystemEntry[];
   allWaypoints: FlatWaypointEntry[];
-  otherQuadrants: Quadrant[];
+  otherGroups: OtherSectorGroup[];
   units: Unit[];
   onChange: (system: DraftSystem) => void;
   onRemove: () => void;
@@ -277,7 +290,7 @@ interface SystemEditorProps {
   isLast: boolean;
 }
 
-export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants, units, onChange, onRemove, onMove, isFirst, isLast }: SystemEditorProps) {
+export function SystemEditor({ system, allSystems, allWaypoints, otherGroups, units, onChange, onRemove, onMove, isFirst, isLast }: SystemEditorProps) {
   const [expandedDownstreamQuadrantIds, setExpandedDownstreamQuadrantIds] = useState<number[]>([]);
   const [expandedUnlockQuadrantIds, setExpandedUnlockQuadrantIds] = useState<number[]>([]);
 
@@ -370,7 +383,7 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
         rows={2}
       />
 
-      {(otherSystems.length > 0 || otherQuadrants?.length > 0) && (
+      {(otherSystems.length > 0 || otherGroups.length > 0) && (
         <div className="downstream-picker">
           <span className="downstream-label">Feeds into:</span>
           {otherSystems.map((entry) => (
@@ -383,17 +396,17 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
               {entry.system.name || 'system'}
             </label>
           ))}
-          {otherQuadrants?.map((q) => (
-            <div key={q.id} className="downstream-quadrant-group">
+          {otherGroups.filter((g) => g.systems.length > 0).map((g) => (
+            <div key={g.id} className="downstream-quadrant-group">
               <button
                 type="button"
                 className="downstream-quadrant-toggle"
-                onClick={() => setExpandedDownstreamQuadrantIds((ids) => ids.includes(q.id) ? ids.filter((id) => id !== q.id) : [...ids, q.id])}
+                onClick={() => setExpandedDownstreamQuadrantIds((ids) => ids.includes(g.id) ? ids.filter((id) => id !== g.id) : [...ids, g.id])}
               >
-                {expandedDownstreamQuadrantIds.includes(q.id) ? '▾' : '▸'} {q.name}
+                {expandedDownstreamQuadrantIds.includes(g.id) ? '▾' : '▸'} {g.label}
               </button>
-              {expandedDownstreamQuadrantIds.includes(q.id) &&
-                q.sectors.flatMap((s) => s.systems).map((sy) => (
+              {expandedDownstreamQuadrantIds.includes(g.id) &&
+                g.systems.map((sy) => (
                   <label key={sy.id} className="downstream-option downstream-option-cross">
                     <input
                       type="checkbox"
@@ -408,7 +421,7 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
         </div>
       )}
 
-      {(allWaypoints.length > 0 || otherQuadrants?.length > 0) && (
+      {(allWaypoints.length > 0 || otherGroups.length > 0) && (
         <div className="downstream-picker">
           <span className="downstream-label">Unlocks:</span>
           {allWaypoints.map((entry) => (
@@ -421,17 +434,17 @@ export function SystemEditor({ system, allSystems, allWaypoints, otherQuadrants,
               {entry.waypoint.name || 'waypoint'}
             </label>
           ))}
-          {otherQuadrants?.map((q) => (
-            <div key={q.id} className="downstream-quadrant-group">
+          {otherGroups.filter((g) => g.waypoints.length > 0).map((g) => (
+            <div key={g.id} className="downstream-quadrant-group">
               <button
                 type="button"
                 className="downstream-quadrant-toggle"
-                onClick={() => setExpandedUnlockQuadrantIds((ids) => ids.includes(q.id) ? ids.filter((id) => id !== q.id) : [...ids, q.id])}
+                onClick={() => setExpandedUnlockQuadrantIds((ids) => ids.includes(g.id) ? ids.filter((id) => id !== g.id) : [...ids, g.id])}
               >
-                {expandedUnlockQuadrantIds.includes(q.id) ? '▾' : '▸'} {q.name}
+                {expandedUnlockQuadrantIds.includes(g.id) ? '▾' : '▸'} {g.label}
               </button>
-              {expandedUnlockQuadrantIds.includes(q.id) &&
-                q.sectors.flatMap((s) => s.waypoints).map((w) => (
+              {expandedUnlockQuadrantIds.includes(g.id) &&
+                g.waypoints.map((w) => (
                   <label key={w.id} className="downstream-option downstream-option-cross">
                     <input
                       type="checkbox"
