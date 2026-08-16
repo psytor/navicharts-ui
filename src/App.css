@@ -280,6 +280,10 @@
   font-size: 10px;
   line-height: 16px;
   text-align: center;
+  /* Sibling of (not child of) the chamfered Card it badges, sitting earlier
+     in DOM order - without this, the Card paints on top by default stacking
+     order and covers the sliver of badge that overlaps its corner. */
+  z-index: 2;
 }
 
 /* Gearing Order cards - wider than a plain .unit-card to fit the same
@@ -1580,6 +1584,7 @@
   color: var(--color-error);
   font-size: 11px;
   padding: 0;
+  z-index: 2;
 }
 
 .squad-pool-card {
@@ -1606,6 +1611,9 @@
   font-size: 10px;
   line-height: 16px;
   text-align: center;
+  /* same reasoning as .unit-card-priority above - sibling before the Card
+     in DOM order, needs to explicitly out-rank it in stacking order */
+  z-index: 2;
 }
 
 .squad-member-special {
