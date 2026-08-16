@@ -455,7 +455,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
         headerClassName="shipment-header"
         color="#8c9bd0"
         title="Shipments"
-        intro="No confirmed real farming node yet - buy shards with the listed currency instead."
+        intro="Buy shards with the listed currency."
         groups={activeShipments}
         snapshots={snapshots}
       />
