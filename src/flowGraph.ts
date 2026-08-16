@@ -669,14 +669,19 @@ export function layoutGraph({ quadrants, prerequisiteEdges, unlockEdges }: Deriv
 
   // Unlock edges are usually a short same-sector drop from a System straight
   // down to its own Waypoint - dagre already lays those out with nothing
-  // else in between, so the plain built-in smoothstep is fine as-is.
+  // else in between, so the plain built-in smoothstep is fine as-is. A
+  // System can unlock a Waypoint outside its own Sector/Quadrant too though
+  // (e.g. a capital ship reward that lives in a different Sector than the
+  // crew System that unlocks it) - animated the same way a boundary-
+  // crossing prerequisite edge is, so "this line leaves the box" reads the
+  // same regardless of which edge kind it is.
   const unlockFlowEdges: Edge[] = unlockEdges.map((e) => ({
     id: e.id,
     source: e.source,
     target: e.target,
     type: 'smoothstep',
     pathOptions: { borderRadius: 12 },
-    animated: false,
+    animated: e.crossQuadrant || e.crossSector,
     zIndex: 0,
     style: { stroke: 'var(--color-text-secondary)' },
   }));
