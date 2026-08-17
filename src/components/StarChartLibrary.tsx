@@ -71,6 +71,7 @@ function NewStarChartForm({ onCreated, onCancel }: NewStarChartFormProps) {
 
 interface ChartCardProps {
   chart: StarChartListItem;
+  isLoggedIn: boolean;
   isOwner: boolean;
   isAdmin: boolean;
   isBookmarked: boolean;
@@ -79,7 +80,7 @@ interface ChartCardProps {
   onChanged: (deletedActiveChart?: boolean) => void | Promise<void>;
 }
 
-function ChartCard({ chart, isOwner, isAdmin, isBookmarked, selectedAllyCode, onSwitch, onChanged }: ChartCardProps) {
+function ChartCard({ chart, isLoggedIn, isOwner, isAdmin, isBookmarked, selectedAllyCode, onSwitch, onChanged }: ChartCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,7 +88,11 @@ function ChartCard({ chart, isOwner, isAdmin, isBookmarked, selectedAllyCode, on
 
   const canDelete = isOwner || isAdmin;
   const canPublish = isAdmin && (chart.visibility === 'shared' || chart.visibility === 'guild');
-  const canBookmark = !isOwner;
+  // Bookmarking is a per-user record (POST /bookmarks requires auth) - an
+  // anonymous visitor isn't the owner of anything either, so `!isOwner`
+  // alone was true for every card they looked at, showing a Bookmark button
+  // that would just 401.
+  const canBookmark = isLoggedIn && !isOwner;
 
   function handleDeleteClick() {
     if (!confirmingDelete) {
@@ -249,6 +254,7 @@ function Section({
           <ChartCard
             key={chart.id}
             chart={chart}
+            isLoggedIn={userId != null}
             isOwner={userId != null && chart.owner_user_id === userId}
             isBookmarked={bookmarkedIds.has(chart.id)}
             {...rest}
@@ -277,13 +283,15 @@ export function StarChartLibrary({
 
   return (
     <div className="star-chart-library">
-      <div className="library-toolbar">
-        {creating ? (
-          <NewStarChartForm onCreated={handleCreated} onCancel={() => setCreating(false)} />
-        ) : (
-          <Button variant="primary" size="sm" onClick={() => setCreating(true)}>+ New Star Chart</Button>
-        )}
-      </div>
+      {userId != null && (
+        <div className="library-toolbar">
+          {creating ? (
+            <NewStarChartForm onCreated={handleCreated} onCancel={() => setCreating(false)} />
+          ) : (
+            <Button variant="primary" size="sm" onClick={() => setCreating(true)}>+ New Star Chart</Button>
+          )}
+        </div>
+      )}
       {noCharts && <p className="library-empty">No star charts to show yet.</p>}
       <Section title="Curated" charts={curatedCharts} {...sectionProps} />
       <Section title="Mine" charts={myCharts} {...sectionProps} />
