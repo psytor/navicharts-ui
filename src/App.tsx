@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { NavBar, Container, Footer, Card, Button, useAuth } from 'astrogators-shared-ui';
-import { api } from './api';
+import { api, getShareUrl } from './api';
 import { Quadrant } from './components/Quadrant';
 import { QuadrantBuilder } from './components/QuadrantBuilder';
-import { StarChartPicker } from './components/StarChartPicker';
+import { StarChartLibrary } from './components/StarChartLibrary';
 import { RoadmapView } from './components/RoadmapView';
 import { FlowView } from './components/FlowView';
 import { InventoryView } from './components/InventoryView';
@@ -12,16 +12,27 @@ import type { StarChart, StarChartListItem, UnitWithRoster } from './types';
 import './App.css';
 
 type ViewName = 'roadmap' | 'plan' | 'visualise' | 'inventory';
+type AppMode = 'library' | 'chart';
+
+// The URL is the single source of truth for which chart (if any) is open -
+// no localStorage auto-resume. Bare /navicharts/ means "show the library";
+// ?chart=<id> (from a share link, or from our own replaceState on switch)
+// means "open this chart directly".
+function chartIdFromUrl(): number | null {
+  const raw = new URLSearchParams(window.location.search).get('chart');
+  const parsed = raw ? Number(raw) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 function App() {
   const { user, selectedAllyCode, isLoading: authLoading } = useAuth();
 
   const [myCharts, setMyCharts] = useState<StarChartListItem[]>([]);
   const [curatedCharts, setCuratedCharts] = useState<StarChartListItem[]>([]);
-  const [activeStarChartId, setActiveStarChartId] = useState<number | null>(() => {
-    const stored = localStorage.getItem('activeStarChartId');
-    return stored ? Number(stored) : null;
-  });
+  const [guildCharts, setGuildCharts] = useState<StarChartListItem[]>([]);
+  const [bookmarkedCharts, setBookmarkedCharts] = useState<StarChartListItem[]>([]);
+  const [appMode, setAppMode] = useState<AppMode>(() => (chartIdFromUrl() != null ? 'chart' : 'library'));
+  const [activeStarChartId, setActiveStarChartId] = useState<number | null>(() => chartIdFromUrl());
   const [starChart, setStarChart] = useState<StarChart | null>(null);
   const [units, setUnits] = useState<UnitWithRoster[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +40,8 @@ function App() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [view, setView] = useState<ViewName>('roadmap');
   const [editingQuadrantId, setEditingQuadrantId] = useState<number | null>(null);
+  const [bookmarkBusy, setBookmarkBusy] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const loadStarChartDetail = useCallback(async (starChartId: number) => {
     try {
@@ -48,51 +61,84 @@ function App() {
     try {
       // No single "list everything" endpoint anymore now that charts are
       // owned per-user - "mine" 401s with no token; that's fine
-      // unauthenticated, just an empty list.
-      const [mine, curated] = await Promise.all([
+      // unauthenticated, just an empty list. Guild/bookmarked need
+      // ally_code/a logged-in user respectively - skip rather than error
+      // when those preconditions aren't met yet.
+      const [mine, curated, guild, bookmarked] = await Promise.all([
         user ? api.getMyStarCharts().catch(() => []) : Promise.resolve([]),
         api.getCuratedStarCharts().catch(() => []),
+        selectedAllyCode ? api.getGuildStarCharts(selectedAllyCode).catch(() => []) : Promise.resolve([]),
+        user ? api.getBookmarkedStarCharts().catch(() => []) : Promise.resolve([]),
       ]);
       setMyCharts(mine);
       setCuratedCharts(curated);
-      const list = [...mine, ...curated];
-      if (list.length === 0) {
-        setError('No star charts found. Log in and create one, or check that the curated guide has been seeded.');
-        return;
-      }
-      // keep the currently selected star chart if it still exists, otherwise
-      // fall back to the first one
-      setActiveStarChartId((current) => {
-        const stillExists = current != null && list.some((g) => g.id === current);
-        return stillExists ? current : list[0].id;
-      });
+      setGuildCharts(guild);
+      setBookmarkedCharts(bookmarked);
     } catch (e) {
       setError((e as Error).message);
     }
-  }, [user]);
+  }, [user, selectedAllyCode]);
 
   useEffect(() => {
     if (!authLoading) loadStarCharts();
   }, [authLoading, loadStarCharts]);
 
   useEffect(() => {
-    if (activeStarChartId == null) return;
-    localStorage.setItem('activeStarChartId', String(activeStarChartId));
+    if (appMode !== 'chart' || activeStarChartId == null) return;
+    // Keep the URL in sync so the current chart is always copyable/
+    // reloadable as a link - replaceState (not pushState), since switching
+    // charts isn't meant to build browser back/forward history.
+    const url = new URL(window.location.href);
+    url.searchParams.set('chart', String(activeStarChartId));
+    window.history.replaceState(null, '', url);
     loadStarChartDetail(activeStarChartId);
-  }, [activeStarChartId, loadStarChartDetail]);
+  }, [appMode, activeStarChartId, loadStarChartDetail]);
 
   const loadStarChart = useCallback(async () => {
     if (activeStarChartId != null) await loadStarChartDetail(activeStarChartId);
   }, [activeStarChartId, loadStarChartDetail]);
 
-  function switchStarChart(starChartId: number) {
+  // The only way into 'chart' mode - clicking Open in the library, a
+  // ?chart= deep link at mount, or creating a new chart.
+  function openChart(starChartId: number) {
     setEditingQuadrantId(null);
+    setError(null);
+    setView('roadmap');
+    setAppMode('chart');
     setActiveStarChartId(starChartId);
+  }
+
+  // The only way back to the library - strips ?chart= from the URL and
+  // drops the loaded chart entirely (no chart is loaded while in library
+  // mode). Clearing activeStarChartId (rather than leaving it set) also
+  // guarantees re-opening the SAME chart later still changes activeStarChartId
+  // from null -> id, so the effect above reliably re-syncs the URL every time
+  // - it wouldn't fire on a same-id no-op re-set otherwise.
+  function goToLibrary() {
+    setAppMode('library');
+    setActiveStarChartId(null);
+    setStarChart(null);
+    setError(null);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('chart');
+    window.history.replaceState(null, '', url);
+    loadStarCharts();
+  }
+
+  // Refreshes the four library lists after any create/delete/visibility/
+  // publish/bookmark action. When the chart just deleted was the currently
+  // open one, there's nothing sensible left to show it as - go home.
+  async function handleLibraryChanged(deletedActiveChart?: boolean) {
+    if (deletedActiveChart) {
+      goToLibrary();
+      return;
+    }
+    await loadStarCharts();
   }
 
   async function handleStarChartCreated(created: StarChartListItem) {
     await loadStarCharts();
-    switchStarChart(created.id);
+    openChart(created.id);
   }
 
   // The top Quadrant strip is a quick-jump list, not a filter - every view
@@ -146,25 +192,51 @@ function App() {
     }
   }
 
-  // Curated charts are admin-collective and only ever created directly
-  // (seed.py) today - no in-app promotion flow yet, so every curated chart
-  // is treated as read-only here regardless of who's viewing it. Private/
-  // shared charts are editable by their owner only, mirroring the backend's
-  // _can_modify exactly.
+  // Curated charts are admin-collective - always read-only here regardless
+  // of who's viewing it, mirroring the backend's _can_modify exactly (an
+  // admin edits curated content indirectly, by publishing a new snapshot
+  // from the library, never by mutating an already-curated chart in
+  // place). Private/guild/shared charts are editable by their owner only.
   const canModify =
     !!starChart && !!user &&
     starChart.visibility !== 'curated' &&
     starChart.owner_user_id === Number(user.id);
+  const isAdmin = user?.role === 'admin';
+  const isOwner = !!starChart && !!user && starChart.owner_user_id === Number(user.id);
+  const isBookmarked = !!starChart && bookmarkedCharts.some((c) => c.id === starChart.id);
+  const canBookmark = !!starChart && !!user && !isOwner;
+  const canCopyLink = !!starChart && isOwner && starChart.visibility === 'shared';
+
+  async function handleBookmarkToggle() {
+    if (!starChart) return;
+    setBookmarkBusy(true);
+    try {
+      if (isBookmarked) {
+        await api.deleteBookmark(starChart.id);
+      } else {
+        await api.createBookmark(starChart.id, selectedAllyCode);
+      }
+      await loadStarCharts();
+    } catch (e) {
+      setSyncMessage(`Bookmark failed: ${(e as Error).message}`);
+    } finally {
+      setBookmarkBusy(false);
+    }
+  }
+
+  function handleCopyLink() {
+    if (!starChart) return;
+    navigator.clipboard.writeText(getShareUrl(starChart.id)).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  }
 
   const rightExtras = (
     <div className="sync-controls">
-      <StarChartPicker
-        myCharts={myCharts}
-        curatedCharts={curatedCharts}
-        activeStarChartId={activeStarChartId}
-        onSwitch={switchStarChart}
-        onCreated={handleStarChartCreated}
-      />
+      <Button variant="outline" size="sm" onClick={goToLibrary} disabled={appMode === 'library'}>
+        My Star Charts
+      </Button>
       <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
         {syncing ? 'Syncing...' : 'Sync Roster'}
       </Button>
@@ -174,9 +246,25 @@ function App() {
   return (
     <>
       <NavBar appName="Navicharts" appHref="/navicharts/" showAllyCode rightExtras={rightExtras} />
-      <Container maxWidth={view === 'visualise' || view === 'inventory' ? 'full' : 'lg'} className="app">
-        {error ? (
-          <div className="app-error">{error}</div>
+      <Container maxWidth={appMode === 'chart' && (view === 'visualise' || view === 'inventory') ? 'full' : 'lg'} className="app">
+        {appMode === 'library' ? (
+          <StarChartLibrary
+            myCharts={myCharts}
+            curatedCharts={curatedCharts}
+            guildCharts={guildCharts}
+            bookmarkedCharts={bookmarkedCharts}
+            userId={user ? Number(user.id) : null}
+            isAdmin={isAdmin}
+            selectedAllyCode={selectedAllyCode}
+            onSwitch={openChart}
+            onChanged={handleLibraryChanged}
+            onCreated={handleStarChartCreated}
+          />
+        ) : error ? (
+          <div className="app-error">
+            <p>{error}</p>
+            <Button variant="outline" size="sm" onClick={goToLibrary}>Back to My Star Charts</Button>
+          </div>
         ) : !starChart ? (
           <div className="app-loading">Loading...</div>
         ) : (
@@ -185,6 +273,18 @@ function App() {
               <div>
                 <h1>{starChart.name}</h1>
                 {starChart.source && <p className="star-chart-source">{starChart.source}</p>}
+              </div>
+              <div className="app-header-actions">
+                {canCopyLink && (
+                  <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                    {linkCopied ? 'Copied!' : 'Copy link'}
+                  </Button>
+                )}
+                {canBookmark && (
+                  <Button variant="outline" size="sm" onClick={handleBookmarkToggle} disabled={bookmarkBusy}>
+                    {isBookmarked ? 'Unbookmark' : 'Bookmark'}
+                  </Button>
+                )}
               </div>
             </Card>
             {syncMessage && <div className="sync-message">{syncMessage}</div>}

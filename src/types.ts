@@ -9,7 +9,7 @@
  *                                                unlocks)
  */
 
-export type ChartVisibility = "private" | "shared" | "curated";
+export type ChartVisibility = "private" | "guild" | "shared" | "curated";
 
 export interface RosterSnapshot {
   gear_level: number | null;
@@ -154,6 +154,16 @@ export interface StarChartListItem {
   source: string | null;
   owner_user_id: number | null;
   visibility: ChartVisibility;
+}
+
+export interface VisibilityIn {
+  visibility: ChartVisibility;
+  ally_code?: string | null;
+}
+
+export interface BookmarkIn {
+  star_chart_id: number;
+  ally_code?: string | null;
 }
 
 export interface SquadMember {

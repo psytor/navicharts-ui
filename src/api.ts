@@ -46,6 +46,10 @@ import type {
   SyncResult,
 } from './types';
 
+export function getShareUrl(chartId: number): string {
+  return `${window.location.origin}${window.location.pathname}?chart=${chartId}`;
+}
+
 export const API_BASE: string =
   import.meta.env.VITE_NAVICHARTS_URL || 'http://localhost/navicharts';
 
@@ -69,11 +73,25 @@ export const api = {
     request(`/star-charts/${id}${allyCode ? `?ally_code=${encodeURIComponent(allyCode)}` : ''}`),
   createStarChart: (payload: StarChartCreateIn): Promise<StarChartListItem> =>
     request('/star-charts', { method: 'POST', body: JSON.stringify(payload) }),
-  setStarChartVisibility: (id: number, visibility: ChartVisibility): Promise<StarChartListItem> =>
+  setStarChartVisibility: (id: number, visibility: ChartVisibility, allyCode?: string | null): Promise<StarChartListItem> =>
     request(`/star-charts/${id}/visibility`, {
       method: 'PATCH',
-      body: JSON.stringify({ visibility }),
+      body: JSON.stringify({ visibility, ally_code: allyCode }),
     }),
+  deleteStarChart: (id: number): Promise<void> =>
+    request(`/star-charts/${id}`, { method: 'DELETE' }),
+  publishStarChart: (id: number): Promise<StarChartListItem> =>
+    request(`/star-charts/${id}/publish`, { method: 'POST' }),
+  getGuildStarCharts: (allyCode: string): Promise<StarChartListItem[]> =>
+    request(`/star-charts/guild?ally_code=${encodeURIComponent(allyCode)}`),
+  getBookmarkedStarCharts: (): Promise<StarChartListItem[]> => request('/bookmarks'),
+  createBookmark: (starChartId: number, allyCode?: string | null): Promise<StarChartListItem> =>
+    request('/bookmarks', {
+      method: 'POST',
+      body: JSON.stringify({ star_chart_id: starChartId, ally_code: allyCode }),
+    }),
+  deleteBookmark: (starChartId: number): Promise<void> =>
+    request(`/bookmarks/${starChartId}`, { method: 'DELETE' }),
 
   getUnitCatalog: (): Promise<Unit[]> => request('/units/catalog'),
   getUnits: (allyCode: string): Promise<UnitWithRoster[]> =>
