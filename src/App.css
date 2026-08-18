@@ -274,6 +274,14 @@
   max-width: 260px;
 }
 
+/* Normal Energy's 3-column grid (76px * 3 + 8px * 2 gaps = 244px content)
+   plus the Card's own padding (--card-padding, 24px each side) needs 292px -
+   the base 260px cap (sized for the 2-column boxes) was clipping the third
+   column off under the chamfered corner. */
+.location-group-wide {
+  max-width: 300px;
+}
+
 .location-header {
   font-family: var(--font-heading);
   font-weight: 700;

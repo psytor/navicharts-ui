@@ -462,9 +462,10 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
           // CAMPAIGN_ENERGY_GROUP) and gets a taller cap (9 vs 6) to match -
           // 3 columns instead of the other energy boxes' 2 keeps it from
           // growing as tall as they are.
-          const energyGridClass = key === 'Normal Energy' ? 'location-card-grid-energy-wide' : 'location-card-grid-energy';
+          const isWideEnergy = key === 'Normal Energy';
+          const energyGridClass = isWideEnergy ? 'location-card-grid-energy-wide' : 'location-card-grid-energy';
           return (
-            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className="location-group" key={key}>
+            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className={`location-group ${isWideEnergy ? 'location-group-wide' : ''}`} key={key}>
               <div className="location-header" style={{ color }}>
                 {key}
               </div>
