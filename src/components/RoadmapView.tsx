@@ -259,9 +259,15 @@ function isGearOrRelicComplete(req: SystemRequirement, snap: RosterSnapshot | un
 // ordering is otherwise invisible in the UI, so make the rank explicit
 // instead of leaving it to be inferred from left-to-right/top-to-bottom
 // position alone.
-function PriorityBadge({ rank }: { rank: number }) {
+// `gear` shifts the badge inward for GearUnitCard - its portrait sits inside
+// the wider 128px GearRingPortrait wrap (room for the gear-ring graphic to
+// extend past the 70px portrait without clipping, see .character-card-
+// portrait-wrap), so the plain -6px/-6px corner offset used for the compact
+// 76px ShardUnitCard would leave the badge floating in that ring's padding
+// instead of overhanging the ring the way it overhangs the portrait there.
+function PriorityBadge({ rank, gear = false }: { rank: number; gear?: boolean }) {
   return (
-    <span className="unit-card-priority" title="Priority order - based on quadrant order in the Plan tab">
+    <span className={`unit-card-priority ${gear ? 'unit-card-priority--gear' : ''}`} title="Priority order - based on quadrant order in the Plan tab">
       {rank}
     </span>
   );
@@ -405,7 +411,7 @@ function GearUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank: 
 
   return (
     <div className="unit-card-slot">
-      <PriorityBadge rank={rank} />
+      <PriorityBadge rank={rank} gear />
       <div
         className={`gear-order-card chamfered-box-sm ${owned ? '' : 'gear-order-card--unowned'}`}
         title={owned ? undefined : 'Not unlocked yet - farm shards to unlock before gearing'}

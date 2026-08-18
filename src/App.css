@@ -373,6 +373,19 @@
   z-index: 2;
 }
 
+/* GearUnitCard's portrait sits inside GearRingPortrait's 128x120 wrap (see
+   .character-card-portrait-wrap) - room for the gear-ring graphic to extend
+   past the 70px portrait circle without clipping. The plain -6px/-6px corner
+   offset above was measured for the compact 76px .unit-card, where the
+   portrait fills most of the card; here it left the badge stranded in that
+   ring's own padding, far from the portrait it's meant to badge. Shifted in
+   to land back on the ring's actual top-left edge instead - verified against
+   a real render (both crescent and alignment/relic ring styles). */
+.unit-card-priority--gear {
+  top: 18px;
+  left: 14px;
+}
+
 /* Gearing Order cards - wider than a plain .unit-card to fit the same
    portrait+gear-ring+badge rendering the Inventory tab uses (see
    GearRingPortrait), so current gear/relic tier is visible at a glance. */
