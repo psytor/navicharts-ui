@@ -252,7 +252,7 @@ function PriorityBadge({ rank }: { rank: number }) {
 // node you farm in order, so a numbered priority badge would be actively
 // misleading there. Energy nodes, Journeys, and Shipments keep it - those
 // really are "farm/buy this one before that one."
-function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?: number; snapshots: Map<string, RosterSnapshot> }) {
+function ShardUnitCard({ entry, rank, snapshots, color }: { entry: LocationEntry; rank?: number; snapshots: Map<string, RosterSnapshot>; color: string }) {
   const { unit } = entry.req;
   const stars = snapshots.get(unit.id)?.stars ?? 0;
   const detail = locationDetailLabel(entry.locationDetail);
@@ -263,7 +263,11 @@ function ShardUnitCard({ entry, rank, snapshots }: { entry: LocationEntry; rank?
           corner (top:-6px/left:-6px) has to sit outside the clipped box to
           avoid being sliced off by the chamfer cut. */}
       {rank != null && <PriorityBadge rank={rank} />}
-      <Card chamfered chamferSize="sm" hoverable padding="sm" className="unit-card">
+      {/* showDiagonalBorders explicit here (not left to inherit from the
+          ancestor location-group Card) - inheriting only gives the straight
+          rectangular border, not the diagonal line divs that finish it off
+          at the chamfered corners. */}
+      <Card chamfered chamferSize="sm" hoverable padding="sm" showDiagonalBorders diagonalBorderColor={color} className="unit-card">
         {/* Shipment boxes group several currencies under one shop (see
             buildLocations) - the corner pin (same overlay RequirementPortrait
             uses in Visualise) points back to the exact currency this unit
@@ -345,7 +349,7 @@ function RoadmapSubsection({ className, headerClassName, color, title, intro, gr
             </div>
             <div className="location-card-grid">
               {entries.map((entry, i) => (
-                <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={showRank ? i + 1 : undefined} snapshots={snapshots} />
+                <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={showRank ? i + 1 : undefined} snapshots={snapshots} color={groupColor} />
               ))}
             </div>
           </Card>
@@ -432,7 +436,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
               </div>
               <div className={`location-card-grid ${isEnergy ? 'location-card-grid-energy' : ''}`}>
                 {entries.map((entry, i) => (
-                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={isEnergy ? i + 1 : undefined} snapshots={snapshots} />
+                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={isEnergy ? i + 1 : undefined} snapshots={snapshots} color={color} />
                 ))}
               </div>
             </Card>

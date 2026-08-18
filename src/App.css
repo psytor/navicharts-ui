@@ -504,6 +504,11 @@
   width: 128px;
   padding: 8px 0;
   text-align: center;
+  /* Card's border color is a CSS custom property that inherits down the DOM
+     - without this reset, every character card silently picks up the
+     inventory-panel's own diagonalBorderColor (cyan) as a plain rectangular
+     border, even though it never opted into showDiagonalBorders itself. */
+  --card-edge-color: transparent;
 }
 
 .character-card-portrait-wrap {
