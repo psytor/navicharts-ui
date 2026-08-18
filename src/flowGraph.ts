@@ -743,6 +743,29 @@ export function layoutGraph({ quadrants, prerequisiteEdges, unlockEdges }: Deriv
   return { nodes, edges: [...unlockFlowEdges, ...prerequisiteFlowEdges] };
 }
 
-export function buildFlowGraph(starChart: StarChart): { nodes: Node[]; edges: Edge[] } {
-  return layoutGraph(deriveGraph(starChart));
+// quadrantId narrows the rendered graph down to one Quadrant's subtree
+// (its quadrantGroup node + descendant sectorGroup/system/waypoint nodes),
+// pruning any edge that loses an endpoint in the process (a prerequisite/
+// unlock crossing into a now-hidden Quadrant). The full graph is still
+// laid out first and only pruned after - cheaper to compute than it looks
+// (chart sizes are small) and it means the layout math (positions, cross-
+// boundary routing) never has to special-case "this Quadrant is filtered
+// out", it just always sees the whole chart. fitView on the canvas takes
+// care of re-centering on whatever subset ends up visible.
+export function buildFlowGraph(starChart: StarChart, quadrantId?: number | null): { nodes: Node[]; edges: Edge[] } {
+  const { nodes, edges } = layoutGraph(deriveGraph(starChart));
+  if (quadrantId == null) return { nodes, edges };
+
+  const groupId = `quadrant-${quadrantId}`;
+  const keptSectorIds = new Set(
+    nodes.filter((n) => n.type === 'sectorGroup' && n.parentId === groupId).map((n) => n.id)
+  );
+  const filteredNodes = nodes.filter((n) => {
+    if (n.id === groupId) return true;
+    if (n.type === 'sectorGroup') return n.parentId === groupId;
+    return !!n.parentId && keptSectorIds.has(n.parentId);
+  });
+  const keptIds = new Set(filteredNodes.map((n) => n.id));
+  const filteredEdges = edges.filter((e) => keptIds.has(e.source) && keptIds.has(e.target));
+  return { nodes: filteredNodes, edges: filteredEdges };
 }

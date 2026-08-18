@@ -39,6 +39,7 @@ function App() {
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [view, setView] = useState<ViewName>('roadmap');
+  const [selectedQuadrantId, setSelectedQuadrantId] = useState<number | null>(null);
   const [editingQuadrantId, setEditingQuadrantId] = useState<number | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
@@ -102,6 +103,7 @@ function App() {
   // ?chart= deep link at mount, or creating a new chart.
   function openChart(starChartId: number) {
     setEditingQuadrantId(null);
+    setSelectedQuadrantId(null);
     setError(null);
     setView('roadmap');
     setAppMode('chart');
@@ -141,15 +143,14 @@ function App() {
     openChart(created.id);
   }
 
-  // The top Quadrant strip is a quick-jump list, not a filter - every view
-  // already renders every Quadrant in the chart at once (there's no
-  // "active quadrant" concept anywhere else), so a tab click just switches
-  // to the Plan tab and scrolls that Quadrant's card into view.
-  function jumpToQuadrant(quadrantId: number) {
-    setView('plan');
-    requestAnimationFrame(() => {
-      document.getElementById(`quadrant-${quadrantId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
+  // The top Quadrant strip is a filter, not navigation - it doesn't touch
+  // `view`. Plan and Visualise read selectedQuadrantId and narrow down to
+  // just that Quadrant; Roadmap always combines every Quadrant regardless,
+  // so selecting one has no visible effect there (that's intentional, not
+  // a bug - Roadmap is a whole-chart summary). Clicking the already-active
+  // Quadrant again clears the filter back to "all".
+  function toggleQuadrantFilter(quadrantId: number) {
+    setSelectedQuadrantId((current) => (current === quadrantId ? null : quadrantId));
   }
 
   async function moveQuadrant(quadrantId: number, direction: number) {
@@ -291,7 +292,11 @@ function App() {
 
             <nav className="episode-tabs">
               {starChart.quadrants.map((q) => (
-                <button key={q.id} onClick={() => jumpToQuadrant(q.id)}>
+                <button
+                  key={q.id}
+                  className={selectedQuadrantId === q.id ? 'active' : ''}
+                  onClick={() => toggleQuadrantFilter(q.id)}
+                >
                   {q.name}
                 </button>
               ))}
@@ -327,14 +332,15 @@ function App() {
             {view === 'roadmap' ? (
               <RoadmapView starChart={starChart} units={units} />
             ) : view === 'visualise' ? (
-              <FlowView starChart={starChart} />
+              <FlowView starChart={starChart} quadrantId={selectedQuadrantId} />
             ) : view === 'inventory' ? (
               <InventoryView units={units} />
             ) : (
               <>
                 <main className="quadrants">
-                  {starChart.quadrants.map((quadrant, idx) =>
-                    editingQuadrantId === quadrant.id ? (
+                  {starChart.quadrants.map((quadrant, idx) => {
+                    if (selectedQuadrantId != null && quadrant.id !== selectedQuadrantId) return null;
+                    return editingQuadrantId === quadrant.id ? (
                       <QuadrantBuilder
                         key={quadrant.id}
                         starChartId={starChart.id}
@@ -358,8 +364,8 @@ function App() {
                           canModify={canModify}
                         />
                       </div>
-                    )
-                  )}
+                    );
+                  })}
                 </main>
 
                 {canModify && (

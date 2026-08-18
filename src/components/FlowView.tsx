@@ -30,8 +30,8 @@ function minimapNodeColor(node: Node): string {
   return 'rgba(255, 255, 255, 0.18)';
 }
 
-export function FlowView({ starChart }: { starChart: StarChart }) {
-  const { nodes, edges } = useMemo(() => buildFlowGraph(starChart), [starChart]);
+export function FlowView({ starChart, quadrantId }: { starChart: StarChart; quadrantId?: number | null }) {
+  const { nodes, edges } = useMemo(() => buildFlowGraph(starChart, quadrantId), [starChart, quadrantId]);
 
   return (
     <div className="flow-view">
