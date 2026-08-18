@@ -64,8 +64,8 @@ export const ENERGY_STYLES: Record<string, { label: string; fullLabel: string; c
   ship: { label: 'Ship', fullLabel: 'Ship Energy', color: '#4fc3d9' },
 };
 
-// currency-icons/ filenames (see backend/app/extract_currency_icons.py) for
-// each energy/currency/LST key - used by RequirementPortrait's corner
+// currency-icons/ filenames for each energy/currency/LST key - used by
+// RequirementPortrait's corner
 // badges. Not every extracted icon has a key here (e.g. data_caches.png,
 // era_level_currency.png) - those have no corresponding field in the data
 // model yet, so they stay unused rather than force-mapped to something wrong.
@@ -95,16 +95,13 @@ export const CURRENCY_ICON_FILES: Record<string, string> = {
   guild_event_mk3: 'guild_event_tokens_mk3',
 };
 
-// "Anomalous Lightspeed Token" has no game asset anywhere in the local dump
-// (checked every atlas/standalone file - see extract_currency_icons.py
-// docstring) - deliberately absent here so RequirementPortrait falls back to
-// a small text chip for it instead of a broken image.
 export const LST_ICON_FILES: Record<string, string> = {
   'Carbonite Lightspeed Token': 'lst_carbonite',
   'Bronzium Lightspeed Token': 'lst_bronzium',
   'Chromium Lightspeed Token': 'lst_chromium',
   'Aurodium Lightspeed Token': 'lst_aurodium',
   'Kyber Lightspeed Token': 'lst_kyber',
+  'Anomalous Lightspeed Token': 'lst_anomalous',
 };
 
 export const OMICRON_ICON_FILE = 'omicron_material';
