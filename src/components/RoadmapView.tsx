@@ -458,12 +458,17 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
           // one of the 3 CAMPAIGN_ORDER energy groups, scheduled_event/
           // journey get their own subsections) - all random-drop rewards, no
           // meaningful priority order.
+          // Normal Energy folds two real campaigns together (see
+          // CAMPAIGN_ENERGY_GROUP) and gets a taller cap (9 vs 6) to match -
+          // 3 columns instead of the other energy boxes' 2 keeps it from
+          // growing as tall as they are.
+          const energyGridClass = key === 'Normal Energy' ? 'location-card-grid-energy-wide' : 'location-card-grid-energy';
           return (
             <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className="location-group" key={key}>
               <div className="location-header" style={{ color }}>
                 {key}
               </div>
-              <div className={`location-card-grid ${isEnergy ? 'location-card-grid-energy' : ''}`}>
+              <div className={`location-card-grid ${isEnergy ? energyGridClass : ''}`}>
                 {entries.map((entry, i) => (
                   <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={isEnergy ? i + 1 : undefined} snapshots={snapshots} color={color} />
                 ))}

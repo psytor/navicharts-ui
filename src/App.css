@@ -298,6 +298,15 @@
   gap: 8px;
 }
 
+/* Normal Energy folds Light Side + Dark Side Battles into one box with a
+   taller cap (9 vs the other energy boxes' 6) - 3 columns instead of 2 keeps
+   it from towering over its Cantina/Fleet Energy neighbors */
+.location-card-grid-energy-wide {
+  display: grid;
+  grid-template-columns: repeat(3, 76px);
+  gap: 8px;
+}
+
 .unit-card-slot {
   position: relative;
 }
