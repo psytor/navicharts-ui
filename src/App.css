@@ -289,9 +289,9 @@
   gap: 8px;
 }
 
-/* energy campaign boxes (Cantina/Light Side/Dark Side/Fleet Battles) are
-   capped to a handful of active units - a fixed 2-column grid keeps every
-   box a similar compact height instead of an unbounded wrapped list */
+/* energy campaign boxes (Normal/Cantina/Fleet Energy) are capped to a
+   handful of active units - a fixed 2-column grid keeps every box a similar
+   compact height instead of an unbounded wrapped list */
 .location-card-grid-energy {
   display: grid;
   grid-template-columns: repeat(2, 76px);

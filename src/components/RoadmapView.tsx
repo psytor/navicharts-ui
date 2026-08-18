@@ -7,17 +7,36 @@ import type { StarChart, SystemRequirement, FarmingLocation, RosterSnapshot, Uni
 
 const MAX_STARS = 7;
 const MAX_GEAR = 13;
-// Energy location boxes (Cantina/Light Side/Dark Side/Fleet Battles) show at
-// most this many not-yet-maxed units, laid out 2 columns wide - keeps every
-// energy box a similar compact height so they actually sit side by side in
-// the grid instead of one long list pushing its neighbors down.
+// Energy location boxes (Normal/Cantina/Fleet Energy) show at most this many
+// not-yet-maxed units, laid out 2 columns wide - keeps every energy box a
+// similar compact height so they actually sit side by side in the grid
+// instead of one long list pushing its neighbors down. Normal Energy gets a
+// bigger cap (see CAMPAIGN_ENERGY_CAP below) since it now folds together two
+// real campaigns (Light Side + Dark Side Battles) worth of farm targets.
 const ENERGY_DISPLAY_CAP = 6;
 
-// the 4 "daily battle" campaigns always come first, in this order; any other
-// real location (events/legendary/journey/raid/conquest) sorts after,
+// Light Side Battles and Dark Side Battles are both plain "Normal" energy in
+// game terms (see Badge.tsx's CAMPAIGN_ENERGY) - the roadmap folds them into
+// one combined "Normal Energy" box rather than two separate ones, so this
+// maps each real campaign name to the display group it lands in.
+const CAMPAIGN_ENERGY_GROUP: Record<string, string> = {
+  'Cantina Battles': 'Cantina Energy',
+  'Light Side Battles': 'Normal Energy',
+  'Dark Side Battles': 'Normal Energy',
+  'Fleet Battles': 'Fleet Energy',
+};
+
+// the 3 "daily battle" energy groups always come first, in this order; any
+// other real location (events/legendary/journey/raid/conquest) sorts after,
 // followed by generic energy/currency fallback groups for units we don't
 // have a confirmed real location for yet.
-const CAMPAIGN_ORDER = ['Cantina Battles', 'Light Side Battles', 'Dark Side Battles', 'Fleet Battles'];
+const CAMPAIGN_ORDER = ['Normal Energy', 'Cantina Energy', 'Fleet Energy'];
+// Normal Energy folds two real campaigns together, so it earns a bigger cap
+// than the single-campaign Cantina/Fleet boxes - everything else falls back
+// to ENERGY_DISPLAY_CAP.
+const CAMPAIGN_ENERGY_CAP: Record<string, number> = {
+  'Normal Energy': 9,
+};
 const ENERGY_FALLBACK_ORDER = ['normal', 'cantina', 'ship'];
 const CURRENCY_KEY_ORDER = [
   'episode_shipment', 'era_shipment', 'cantina_shop', 'squad_arena', 'galactic_war',
@@ -41,10 +60,10 @@ function unshipmentKey(key: string): string {
   return key.startsWith(SHIPMENT_PREFIX) ? key.slice(SHIPMENT_PREFIX.length) : key;
 }
 
-function campaignColor(campaignName: string): string {
-  if (campaignName === 'Cantina Battles') return ENERGY_STYLES.cantina.color;
-  if (campaignName === 'Light Side Battles' || campaignName === 'Dark Side Battles') return ENERGY_STYLES.normal.color;
-  if (campaignName === 'Fleet Battles') return ENERGY_STYLES.ship.color;
+function campaignColor(groupName: string): string {
+  if (groupName === 'Cantina Energy') return ENERGY_STYLES.cantina.color;
+  if (groupName === 'Normal Energy') return ENERGY_STYLES.normal.color;
+  if (groupName === 'Fleet Energy') return ENERGY_STYLES.ship.color;
   return '#c084fc';
 }
 
@@ -113,13 +132,18 @@ function buildLocations(starChart: StarChart) {
               ));
 
           if (realLocations.length > 0) {
+            // Dedup by display group, not raw campaign_name - Light Side
+            // Battles and Dark Side Battles both fold into "Normal Energy"
+            // (CAMPAIGN_ENERGY_GROUP), so a unit farmable in both must still
+            // only get one card in that combined box.
             const seen = new Set<string>();
             realLocations.forEach((loc) => {
-              if (seen.has(loc.campaign_name)) return;
-              seen.add(loc.campaign_name);
+              const groupKey = CAMPAIGN_ENERGY_GROUP[loc.campaign_name] || loc.campaign_name;
+              if (seen.has(groupKey)) return;
+              seen.add(groupKey);
               const isEvent = loc.source_type === 'scheduled_event';
               const isJourney = loc.source_type === 'journey';
-              addEntry(loc.campaign_name, true, isEvent, isJourney, campaignColor(loc.campaign_name), { ...base, locationDetail: loc });
+              addEntry(groupKey, true, isEvent, isJourney, campaignColor(groupKey), { ...base, locationDetail: loc });
             });
           } else if (allLocations.length === 0 && req.energy_type) {
             // energy_type is a manual fallback only, for when there's no real
@@ -286,12 +310,17 @@ function ShardUnitCard({ entry, rank, snapshots, color }: { entry: LocationEntry
 
 // Drops units that have already hit 7 stars (nothing left to farm) and,
 // for the compact energy boxes, caps to the first N in priority order.
-function activeGroupEntries(groups: LocationGroup[], snapshots: Map<string, RosterSnapshot>, opts: { cap?: number } = {}): LocationGroup[] {
-  const { cap } = opts;
+function activeGroupEntries(
+  groups: LocationGroup[],
+  snapshots: Map<string, RosterSnapshot>,
+  opts: { cap?: number; capOverrides?: Record<string, number> } = {}
+): LocationGroup[] {
+  const { cap, capOverrides } = opts;
   return groups
     .map((g) => {
       let entries = g.entries.filter((e) => (snapshots.get(e.req.unit.id)?.stars ?? 0) < MAX_STARS);
-      if (cap) entries = entries.slice(0, cap);
+      const effectiveCap = capOverrides?.[g.key] ?? cap;
+      if (effectiveCap) entries = entries.slice(0, effectiveCap);
       return { ...g, entries };
     })
     .filter((g) => g.entries.length > 0);
@@ -398,12 +427,12 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
     (entry) => !isGearOrRelicComplete(entry.req, snapshots.get(entry.req.unit.id))
   );
 
-  // the 4 daily-battle campaigns get the compact capped/2-col treatment;
+  // the 3 daily-battle energy groups get the compact capped/2-col treatment;
   // every other real location (raids, legendary) keeps the uncapped list
   const activeEnergyLocations = activeGroupEntries(
     locations.filter((g) => CAMPAIGN_ORDER.includes(g.key)),
     snapshots,
-    { cap: ENERGY_DISPLAY_CAP }
+    { cap: ENERGY_DISPLAY_CAP, capOverrides: CAMPAIGN_ENERGY_CAP }
   );
   const activeOtherLocations = activeGroupEntries(
     locations.filter((g) => !CAMPAIGN_ORDER.includes(g.key)),
@@ -426,8 +455,8 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
           const isEnergy = CAMPAIGN_ORDER.includes(key);
           // Non-energy real locations here are always legendary/raid/
           // conquest (see buildLocations - "node" locations always land in
-          // one of the 4 CAMPAIGN_ORDER campaigns, scheduled_event/journey
-          // get their own subsections) - all random-drop rewards, no
+          // one of the 3 CAMPAIGN_ORDER energy groups, scheduled_event/
+          // journey get their own subsections) - all random-drop rewards, no
           // meaningful priority order.
           return (
             <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className="location-group" key={key}>
