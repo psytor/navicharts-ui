@@ -481,6 +481,28 @@
   margin-bottom: 12px;
 }
 
+/* Shipments can have up to a dozen currency-shop boxes with wildly different
+   unit counts (a 1-card Cantina Battles box next to a 12-card Guild
+   Activity one) - plain flex-wrap packs them greedily left-to-right with no
+   height balancing, so a wide screen fits a full row of tall+short boxes
+   together then leaves a mostly-empty trailing row, and neighboring boxes'
+   ragged heights make the whole section look disorganized. CSS multi-column
+   balances box height across as many ~260px+ columns as fit instead, with
+   each box flush-stacked in its column - verified at 1920/1440/900px via a
+   Playwright render before landing on column-width:260px. */
+.shipment-section .roadmap-grid {
+  display: block;
+  column-width: 260px;
+  column-gap: 12px;
+}
+
+.shipment-section .roadmap-grid > .location-group {
+  width: 100%;
+  max-width: none;
+  margin-bottom: 12px;
+  break-inside: avoid;
+}
+
 .unit-card .unit-portrait {
   width: 56px;
   height: 56px;
