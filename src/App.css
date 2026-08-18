@@ -269,6 +269,15 @@
   margin-top: 12px;
 }
 
+/* Second roadmap-grid (non-energy real locations: raids/legendary/conquest)
+   now sits after the Shipments subsection rather than directly after the
+   first roadmap-grid, so the adjacent-sibling rule above doesn't reach it -
+   match the 20px used between every other top-level section
+   (journey/shipment/assault/gearing-section). */
+.roadmap-grid-secondary {
+  margin-top: 20px;
+}
+
 .location-group {
   width: fit-content;
   max-width: 260px;

@@ -451,13 +451,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
         already at 7★ are dropped from these lists.
       </p>
       <div className="roadmap-grid">
-        {[...activeEnergyLocations, ...activeOtherLocations].map(({ key, color, entries }) => {
-          const isEnergy = CAMPAIGN_ORDER.includes(key);
-          // Non-energy real locations here are always legendary/raid/
-          // conquest (see buildLocations - "node" locations always land in
-          // one of the 3 CAMPAIGN_ORDER energy groups, scheduled_event/
-          // journey get their own subsections) - all random-drop rewards, no
-          // meaningful priority order.
+        {activeEnergyLocations.map(({ key, color, entries }) => {
           // Normal Energy folds two real campaigns together (see
           // CAMPAIGN_ENERGY_GROUP) and gets a taller cap (9 vs 6) to match -
           // 3 columns instead of the other energy boxes' 2 keeps it from
@@ -469,9 +463,9 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
               <div className="location-header" style={{ color }}>
                 {key}
               </div>
-              <div className={`location-card-grid ${isEnergy ? energyGridClass : ''}`}>
+              <div className={`location-card-grid ${energyGridClass}`}>
                 {entries.map((entry, i) => (
-                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={isEnergy ? i + 1 : undefined} snapshots={snapshots} color={color} />
+                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} rank={i + 1} snapshots={snapshots} color={color} />
                 ))}
               </div>
             </Card>
@@ -488,6 +482,29 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
         groups={activeShipments}
         snapshots={snapshots}
       />
+
+      {/* Non-energy real locations - always legendary/raid/conquest (see
+          buildLocations - "node" locations always land in one of the 3
+          CAMPAIGN_ORDER energy groups, scheduled_event/journey get their own
+          subsections) - all random-drop rewards, no meaningful priority
+          order, so no rank badge. Guarded like RoadmapSubsection - an empty
+          array must render nothing, not an empty spaced-out box. */}
+      {activeOtherLocations.length > 0 && (
+        <div className="roadmap-grid roadmap-grid-secondary">
+          {activeOtherLocations.map(({ key, color, entries }) => (
+            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className="location-group" key={key}>
+              <div className="location-header" style={{ color }}>
+                {key}
+              </div>
+              <div className="location-card-grid">
+                {entries.map((entry, i) => (
+                  <ShardUnitCard key={`${entry.req.id}-${i}`} entry={entry} snapshots={snapshots} color={color} />
+                ))}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
       <RoadmapSubsection
         className="journey-section"
