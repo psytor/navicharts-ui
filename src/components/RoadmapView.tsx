@@ -438,8 +438,8 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
     locations.filter((g) => !CAMPAIGN_ORDER.includes(g.key)),
     snapshots
   );
-  const activeJourneys = activeGroupEntries(journeys, snapshots);
   const activeShipments = activeGroupEntries(shipments, snapshots);
+  const activeJourneys = activeGroupEntries(journeys, snapshots);
   const activeAssaultBattles = activeGroupEntries(assaultBattles, snapshots);
 
   return (
@@ -480,22 +480,22 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
       </div>
 
       <RoadmapSubsection
-        className="journey-section"
-        headerClassName="journey-header"
-        color="#7ed957"
-        title="Journeys"
-        intro="Story-quest farm sources - complete the journey's chapters to earn shards."
-        groups={activeJourneys}
-        snapshots={snapshots}
-      />
-
-      <RoadmapSubsection
         className="shipment-section"
         headerClassName="shipment-header"
         color="#8c9bd0"
         title="Shipments"
         intro="Buy shards with the listed currency."
         groups={activeShipments}
+        snapshots={snapshots}
+      />
+
+      <RoadmapSubsection
+        className="journey-section"
+        headerClassName="journey-header"
+        color="#7ed957"
+        title="Journeys"
+        intro="Story-quest farm sources - complete the journey's chapters to earn shards."
+        groups={activeJourneys}
         snapshots={snapshots}
       />
 
