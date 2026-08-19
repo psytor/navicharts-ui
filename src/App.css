@@ -334,6 +334,14 @@
   align-items: center;
   width: 76px;
   text-align: center;
+  /* Same fix as .character-card below: Card's border color is a CSS custom
+     property that inherits down the DOM, so without this reset every unit
+     card silently picks up its squad panel's own diagonalBorderColor as a
+     plain rectangular border, even though it never opted into
+     showDiagonalBorders itself. RoadmapView's own .unit-card instance sets
+     diagonalBorderColor directly, which still wins here - an inline style
+     always beats this stylesheet default for that same element. */
+  --card-edge-color: transparent;
 }
 
 .unit-card .badge {
@@ -1526,8 +1534,13 @@
   pointer-events: none;
 }
 
+/* Shrinks/grows to whatever's actually in it - a character squad (5 cards)
+   and a ship squad (8 cards) need very different widths, so a fixed width
+   sized for the wider case left a dead gap next to the narrower one.
+   max-width is just a soft ceiling. */
 .squad-loadout-panel {
-  width: 220px;
+  width: fit-content;
+  max-width: 760px;
   flex-shrink: 0;
   max-height: 75vh;
   overflow-y: auto;
@@ -1537,12 +1550,34 @@
   margin-top: 16px;
 }
 
-/* Squad builder section - sits at the end of the Plan tab's quadrant list
-   (App.jsx), styled as a full-width block like .gearing-section rather than
-   the narrow sidebar .squad-loadout-panel used for the read-only display in
-   Visualise (see SquadList in SquadBuilder.jsx). */
+.squad-search-results {
+  margin-top: 10px;
+}
+
+/* Squad builder section - sits at the end of each Quadrant card's own
+   sector list (Quadrant.tsx), styled as a full-width block like
+   .gearing-section rather than the narrow sidebar .squad-loadout-panel used
+   for the read-only, grouped-by-Quadrant display in Visualise (see
+   SquadList in SquadBuilder.tsx). */
 .squad-builder-section {
+  margin-top: 16px;
+}
+
+/* Per-Quadrant grouping in the Visualise sidebar's SquadList, shown only
+   when no single Quadrant is filtered. */
+.squad-quadrant-group + .squad-quadrant-group {
   margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.squad-quadrant-header {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+  margin-bottom: 10px;
 }
 
 .squad-empty-hint {
@@ -1571,6 +1606,18 @@
   flex-direction: column;
   gap: 10px;
   margin-bottom: 10px;
+}
+
+/* A saved squad's own member grid (inside SquadCard) must read as one team
+   in one row - unlike the "Drag from pool"/"Search all characters" grids
+   in the builder form, which are meant to wrap across many units. */
+.squad-list .location-card-grid {
+  /* nowrap only, no overflow-x - setting overflow-x to anything but visible
+     forces overflow-y to compute as auto too, which clips the leader/capital
+     badge's intentional -6px corner overhang (.squad-special-badge). The
+     panel now sizes itself via width: fit-content, so this row never
+     actually needs to scroll. */
+  flex-wrap: nowrap;
 }
 
 
@@ -1726,8 +1773,13 @@
 
 .squad-special-badge {
   position: absolute;
-  top: -6px;
-  left: -6px;
+  /* -6px was calibrated against the unit card's old 1px border, which gave
+     the eye a reference edge to overlap. Now that --card-edge-color is
+     reset to transparent on .unit-card (no visible border), that same
+     offset reads as floating disconnected from the card - pulled in to -3px
+     so the badge still overlaps the corner instead of hovering past it. */
+  top: -3px;
+  left: -3px;
   width: 16px;
   height: 16px;
   border-radius: 50%;

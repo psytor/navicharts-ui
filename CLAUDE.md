@@ -4,8 +4,26 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Docs current as of:** commit `79810bf`. That session's work (`d7f0e2f`
-onward): restructured the app around a `library`/`chart` split —
+**Docs current as of:** commit `c39dbca`. That session's work (this
+session, on top of `c39dbca`): scoped `Squad Builder` to a Quadrant instead
+of the whole chart. It used to render once, at the very bottom of the
+entire Plan tab (after every Quadrant card), backed by a `Squad` model
+that was deliberately chart/Quadrant-agnostic. Now `Squad` has a required
+`quadrant_id`, `SquadBuilder` renders inside each `Quadrant` card
+(`Quadrant.tsx`, after its sector list), and creating a squad tags it to
+that Quadrant. The Visualise tab's `SquadList` now groups squads by
+Quadrant when the Quadrant nav bar has none selected, and narrows to one
+Quadrant's squads when it does - mirroring the flow graph's own filtering.
+`SquadForm`'s drag pool stayed chart-wide (`getRequiredUnits`, unscoped) by
+design - it was never "every character in the game," only units your own
+charts already reference as a requirement or reward. A "Search all
+characters" box was added alongside it (queries `getUnitCatalog`, the full
+game roster, filtered client-side by name) so a squad can still include a
+unit your farming plan doesn't itself name - the default pool list is
+unchanged, search is purely additive.
+
+Prior session's work (`d7f0e2f`..`79810bf`): restructured the app around a
+`library`/`chart` split —
 `/navicharts/` with no `?chart=` param now lands on a Star Chart **library**
 (Curated/Mine/Guild/Bookmarked) instead of auto-resuming whatever chart was
 last open via `localStorage`; opening a chart is a deliberate action, and
@@ -41,8 +59,12 @@ SWGOH farming-roadmap planner backend). Two things live here:
 - **Star Chart library + viewer** — browse Curated/Mine/Guild/Bookmarked
   charts, open one, and view/edit it across four tabs (Roadmap, Plan,
   Visualise, Inventory).
-- **Squad Builder** — a standalone saved-team widget, rendered at the
-  bottom of the Plan tab, unrelated to any one chart.
+- **Squad Builder** — example-team widget scoped to a single Quadrant,
+  rendered inside that Quadrant's own card in the Plan tab (`Quadrant.tsx`).
+  A squad belongs to the Quadrant it's an example for, since it's gated by
+  which characters are unlocked by that point. The Visualise tab's
+  `SquadList` shows the same squads read-only, grouped by Quadrant unless
+  the Quadrant nav bar has one filtered.
 
 It has **no router** (no `react-router` dependency) — the whole app is one
 component (`App.tsx`) driven by a handful of `useState` values, not routed

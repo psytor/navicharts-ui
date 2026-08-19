@@ -45,7 +45,7 @@ export function FlowView({ starChart, quadrantId }: { starChart: StarChart; quad
           <MiniMap pannable zoomable nodeColor={minimapNodeColor} nodeStrokeWidth={0} maskColor="rgba(0, 0, 0, 0.55)" />
         </ReactFlow>
       </div>
-      <SquadList />
+      <SquadList starChart={starChart} quadrantId={quadrantId} />
     </div>
   );
 }

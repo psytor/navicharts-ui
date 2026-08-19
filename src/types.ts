@@ -175,6 +175,7 @@ export interface SquadMember {
 
 export interface Squad {
   id: number;
+  quadrant_id: number;
   name: string;
   squad_type: string;
   purpose: string;
@@ -259,6 +260,7 @@ export interface SquadMemberIn {
 }
 
 export interface SquadIn {
+  quadrant_id: number;
   name: string;
   squad_type: string;
   purpose: string;

@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Input, Select, useAuth } from 'astrogators-shared-ui';
 import { api } from '../api';
-import { UnitPortrait } from './Badge';
-import type { Squad, SquadMember, SquadMemberIn, Unit } from '../types';
+import { UnitPortrait, OmicronCornerBadge } from './Badge';
+import type { Squad, SquadMember, SquadMemberIn, StarChart, Unit } from '../types';
 
 const SQUAD_PURPOSES = [
   'Squad Arena', 'Fleet Arena', 'Territory War', 'Territory Battle',
@@ -47,6 +47,26 @@ function squadToSlots(squad: Squad): Slots {
   return { special: specialMember ? specialMember.unit : null, members };
 }
 
+interface UnitDragCardProps {
+  unit: Unit;
+}
+
+// The draggable source card shared by both the default required-units pool
+// and the full-catalog search results below it - same look, same drag
+// payload (the unit id), just a different source array feeding it.
+function UnitDragCard({ unit }: UnitDragCardProps) {
+  return (
+    <div
+      className="unit-card squad-pool-card chamfered-box-sm"
+      draggable
+      onDragStart={(e) => e.dataTransfer.setData('text/plain', unit.id)}
+    >
+      <UnitPortrait unit={unit} />
+      <span className="unit-card-name">{unit.name}</span>
+    </div>
+  );
+}
+
 interface SquadSlotProps {
   label: string;
   unit: Unit | null;
@@ -85,12 +105,14 @@ function SquadSlot({ label, unit, isSpecial, onDrop, onClear }: SquadSlotProps) 
 interface SquadFormProps {
   squad?: Squad | null;
   squadType?: string;
+  quadrantId: number;
   pool: Unit[];
+  catalog: Unit[];
   onSaved: () => void;
   onCancel: () => void;
 }
 
-function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps) {
+function SquadForm({ squad, squadType, quadrantId, pool, catalog, onSaved, onCancel }: SquadFormProps) {
   const isEditing = !!squad;
   const type = squad ? squad.squad_type : squadType!;
   const cfg = SQUAD_TYPE_CONFIG[type];
@@ -100,18 +122,27 @@ function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps
   const [slots, setSlots] = useState<Slots>(() => (squad ? squadToSlots(squad) : emptySlots(type)));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState('');
 
   const typePool = pool.filter((u) => u.unit_type === cfg.unitType);
-  // A unit already occupying one of THIS squad's own slots drops out of the
-  // drag source below (it's in use here) - but stays draggable into any
+  const typeCatalog = catalog.filter((u) => u.unit_type === cfg.unitType);
+  // A unit already occupying one of THIS squad's own slots drops out of both
+  // drag sources below (it's in use here) - but stays draggable into any
   // OTHER squad's form, since the same character legitimately sits on
   // multiple real teams (e.g. an arena squad and a TW squad).
   const assignedIds = new Set([slots.special?.id, ...slots.members.map((m) => m?.id)].filter(Boolean));
   const availablePool = typePool.filter((u) => !assignedIds.has(u.id));
+  // Only searched, not listed wholesale - the full catalog is hundreds of
+  // units, so it stays hidden until you actually type a name, rather than
+  // burying the (usually much shorter, actually-relevant) required pool.
+  const trimmedSearch = search.trim().toLowerCase();
+  const searchResults = trimmedSearch
+    ? typeCatalog.filter((u) => !assignedIds.has(u.id) && u.name.toLowerCase().includes(trimmedSearch))
+    : [];
 
   function unitFromDrop(e: React.DragEvent): Unit | null {
     const unitId = e.dataTransfer.getData('text/plain');
-    return typePool.find((u) => u.id === unitId) || null;
+    return typePool.find((u) => u.id === unitId) || typeCatalog.find((u) => u.id === unitId) || null;
   }
   function handleDropSpecial(e: React.DragEvent) {
     e.preventDefault();
@@ -151,7 +182,7 @@ function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps
         ...(slots.special ? [toMemberIn(slots.special, true)] : []),
         ...slots.members.filter((u): u is Unit => !!u).map((u) => toMemberIn(u, false)),
       ];
-      const payload = { name, squad_type: type, purpose, notes: notes || null, members };
+      const payload = { quadrant_id: quadrantId, name, squad_type: type, purpose, notes: notes || null, members };
       if (isEditing) {
         await api.updateSquad(squad!.id, payload);
       } else {
@@ -205,17 +236,25 @@ function SquadForm({ squad, squadType, pool, onSaved, onCancel }: SquadFormProps
       <div className="location-header squad-pool-header">Drag from pool</div>
       <div className="location-card-grid">
         {availablePool.map((u) => (
-          <div
-            key={u.id}
-            className="unit-card squad-pool-card chamfered-box-sm"
-            draggable
-            onDragStart={(e) => e.dataTransfer.setData('text/plain', u.id)}
-          >
-            <UnitPortrait unit={u} />
-            <span className="unit-card-name">{u.name}</span>
-          </div>
+          <UnitDragCard key={u.id} unit={u} />
         ))}
       </div>
+
+      <div className="location-header squad-pool-header">Search all characters</div>
+      <Input
+        type="text"
+        placeholder={`Search for any ${cfg.unitType} by name...`}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+      {trimmedSearch && (
+        <div className="location-card-grid squad-search-results">
+          {searchResults.map((u) => (
+            <UnitDragCard key={u.id} unit={u} />
+          ))}
+          {searchResults.length === 0 && <p className="squad-empty-hint">No matches.</p>}
+        </div>
+      )}
 
       <textarea
         placeholder="Notes (optional)"
@@ -240,12 +279,16 @@ interface SquadCardProps {
   squad: Squad;
   onEdit?: () => void;
   onDelete?: () => void;
+  // Only ever passed by SquadList (Visualise) - the Plan tab's SquadBuilder
+  // renders SquadCard too but deliberately leaves this unset, so the tag
+  // only ever shows in Visualise.
+  omicronUnitIds?: Set<string>;
 }
 
 // onEdit/onDelete are omitted entirely in read-only contexts (see SquadList
 // below) - the actions row only renders when at least one is provided,
 // rather than every caller having to pass no-op handlers.
-function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
+function SquadCard({ squad, onEdit, onDelete, omicronUnitIds }: SquadCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const cfg = SQUAD_TYPE_CONFIG[squad.squad_type];
 
@@ -261,7 +304,7 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
   const sortedMembers = [...squad.members].sort((a, b) => (b.is_leader ? 1 : 0) - (a.is_leader ? 1 : 0));
 
   return (
-    <Card chamfered chamferSize="sm" padding="sm" className="squad-card">
+    <Card chamfered chamferSize="sm" showDiagonalBorders diagonalBorderColor="var(--cyan)" padding="sm" className="squad-card">
       <div className="squad-card-header">
         <span className="squad-card-name">{squad.name}</span>
         <span className="squad-purpose-badge">{squad.purpose}</span>
@@ -297,7 +340,10 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
               padding="sm"
               className={`unit-card${m.is_leader ? ' squad-member-special' : ''}`}
             >
-              <UnitPortrait unit={m.unit} />
+              <div className="unit-card-portrait-wrap">
+                <UnitPortrait unit={m.unit} />
+                <OmicronCornerBadge needsOmicron={omicronUnitIds?.has(m.unit.id) ?? false} />
+              </div>
               <span className="unit-card-name">{m.unit.name}</span>
             </Card>
           </div>
@@ -307,10 +353,14 @@ function SquadCard({ squad, onEdit, onDelete }: SquadCardProps) {
   );
 }
 
-// Read-only display for the Visualise tab - shows what the Plan tab's
+// Read-only display for the Visualise tab - shows what each Quadrant's own
 // SquadBuilder has produced, no create/edit/delete affordances and no unit
 // pool (that's only useful while actively building, see SquadBuilder).
-export function SquadList() {
+// Fetches every squad across the whole chart once; when no Quadrant filter
+// is active, squads are grouped under a heading per Quadrant so it's clear
+// which ones each Quadrant's units actually unlock - matching the flow
+// graph's own per-Quadrant grouping.
+export function SquadList({ starChart, quadrantId }: { starChart: StarChart; quadrantId?: number | null }) {
   const { isAuthenticated } = useAuth();
   const [squads, setSquads] = useState<Squad[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -321,8 +371,35 @@ export function SquadList() {
     // star charts) - skip the call entirely rather than let an
     // unauthenticated request surface the backend's raw 401 text.
     if (!isAuthenticated) return;
-    api.getMySquads().then(setSquads).catch((e) => setError(e.message));
-  }, [isAuthenticated]);
+    api.getMySquads({ starChartId: starChart.id }).then(setSquads).catch((e) => setError(e.message));
+  }, [isAuthenticated, starChart.id]);
+
+  // A specific Quadrant filter narrows to just that one; otherwise every
+  // Quadrant in the chart gets its own group below.
+  const quadrantGroups = quadrantId != null
+    ? starChart.quadrants.filter((q) => q.id === quadrantId)
+    : starChart.quadrants;
+
+  // Chart-wide, not scoped to the filtered Quadrant - a character can need
+  // Omicron material for a later Quadrant's content, and the whole point of
+  // the tag is to not let that get forgotten while it's still early to plan
+  // for. Same requirement tree the flow graph already reads omicron off of
+  // (see RequirementPortrait), just re-keyed by unit id here.
+  const omicronUnitIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const quadrant of starChart.quadrants) {
+      for (const sector of quadrant.sectors) {
+        for (const system of sector.systems) {
+          for (const req of system.requirements) {
+            if (req.omicron_ability_ids && req.omicron_ability_ids.length > 0) {
+              ids.add(req.unit.id);
+            }
+          }
+        }
+      }
+    }
+    return ids;
+  }, [starChart]);
 
   return (
     <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-loadout-panel">
@@ -337,17 +414,26 @@ export function SquadList() {
           )}
         </>
       )}
-      {Object.entries(SQUAD_TYPE_CONFIG).map(([type, cfg]) => {
-        const typeSquads = squads.filter((sq) => sq.squad_type === type);
-        if (typeSquads.length === 0) return null;
+      {quadrantGroups.map((quadrant) => {
+        const quadrantSquads = squads.filter((sq) => sq.quadrant_id === quadrant.id);
+        if (quadrantSquads.length === 0) return null;
         return (
-          <div className="squad-type-group" key={type}>
-            <div className="squad-type-header">{cfg.label}s</div>
-            <div className="squad-list">
-              {typeSquads.map((sq) => (
-                <SquadCard key={sq.id} squad={sq} />
-              ))}
-            </div>
+          <div className="squad-quadrant-group" key={quadrant.id}>
+            {quadrantId == null && <div className="squad-quadrant-header">{quadrant.name}</div>}
+            {Object.entries(SQUAD_TYPE_CONFIG).map(([type, cfg]) => {
+              const typeSquads = quadrantSquads.filter((sq) => sq.squad_type === type);
+              if (typeSquads.length === 0) return null;
+              return (
+                <div className="squad-type-group" key={type}>
+                  <div className="squad-type-header">{cfg.label}s</div>
+                  <div className="squad-list">
+                    {typeSquads.map((sq) => (
+                      <SquadCard key={sq.id} squad={sq} omicronUnitIds={omicronUnitIds} />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       })}
@@ -355,18 +441,22 @@ export function SquadList() {
   );
 }
 
-// Full builder for the Plan tab - sits at the end of the quadrant list, since
-// squads are assembled from whatever units the plan above has you farming.
-export function SquadBuilder() {
+// Full builder living inside a Quadrant card in the Plan tab (see
+// Quadrant.tsx) - squads here are examples of what's actually buildable
+// once this Quadrant's units are unlocked, not a chart-wide roster. The
+// unit pool itself stays chart-wide (getRequiredUnits, unscoped) since a
+// squad can legitimately reuse a character unlocked in an earlier Quadrant.
+export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
   const { isAuthenticated } = useAuth();
   const [squads, setSquads] = useState<Squad[]>([]);
   const [pool, setPool] = useState<Unit[]>([]);
+  const [catalog, setCatalog] = useState<Unit[]>([]);
   const [editingSquadId, setEditingSquadId] = useState<number | null>(null);
   const [creatingType, setCreatingType] = useState<string | null>(null); // null | "character" | "ship"
   const [error, setError] = useState<string | null>(null);
 
   function loadSquads() {
-    api.getMySquads().then(setSquads).catch((e) => setError(e.message));
+    api.getMySquads({ quadrantId }).then(setSquads).catch((e) => setError(e.message));
   }
 
   useEffect(() => {
@@ -376,7 +466,11 @@ export function SquadBuilder() {
     if (!isAuthenticated) return;
     loadSquads();
     api.getRequiredUnits().then(setPool).catch((e) => setError(e.message));
-  }, [isAuthenticated]);
+    // Full game catalog, separate from the required-units pool above - only
+    // surfaced through the form's search box, so a squad can still include
+    // a character your farming plan doesn't itself require.
+    api.getUnitCatalog().then(setCatalog).catch((e) => setError(e.message));
+  }, [isAuthenticated, quadrantId]);
 
   function handleSaved() {
     setEditingSquadId(null);
@@ -416,7 +510,9 @@ export function SquadBuilder() {
                   <SquadForm
                     key={sq.id}
                     squad={sq}
+                    quadrantId={quadrantId}
                     pool={pool}
+                    catalog={catalog}
                     onSaved={handleSaved}
                     onCancel={() => setEditingSquadId(null)}
                   />
@@ -432,7 +528,7 @@ export function SquadBuilder() {
           </div>
 
           {creatingType === type ? (
-            <SquadForm squadType={type} pool={pool} onSaved={handleSaved} onCancel={() => setCreatingType(null)} />
+            <SquadForm squadType={type} quadrantId={quadrantId} pool={pool} catalog={catalog} onSaved={handleSaved} onCancel={() => setCreatingType(null)} />
           ) : (
             <Button variant="outline" fullWidth className="add-quadrant-toggle" onClick={() => setCreatingType(type)}>
               + New {cfg.label}

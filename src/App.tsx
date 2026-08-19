@@ -7,7 +7,6 @@ import { StarChartLibrary } from './components/StarChartLibrary';
 import { RoadmapView } from './components/RoadmapView';
 import { FlowView } from './components/FlowView';
 import { InventoryView } from './components/InventoryView';
-import { SquadBuilder } from './components/SquadBuilder';
 import type { StarChart, StarChartListItem, UnitWithRoster } from './types';
 import './App.css';
 
@@ -377,8 +376,6 @@ function App() {
                     />
                   </div>
                 )}
-
-                <SquadBuilder />
               </>
             )}
           </>

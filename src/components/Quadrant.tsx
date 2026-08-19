@@ -3,6 +3,7 @@ import { Card, Button } from 'astrogators-shared-ui';
 import { api } from '../api';
 import { SectorGroup } from './SectorGroup';
 import { SectorEditorPanel } from './SectorEditorPanel';
+import { SquadBuilder } from './SquadBuilder';
 import type { Quadrant as QuadrantType } from '../types';
 
 interface QuadrantProps {
@@ -145,6 +146,7 @@ export function Quadrant({ quadrant, starChartId, allQuadrants, onChange, onMove
               + Add sector
             </Button>
           )}
+          <SquadBuilder quadrantId={quadrant.id} />
         </div>
       )}
     </Card>

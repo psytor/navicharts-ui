@@ -100,7 +100,13 @@ export const api = {
   getEvents: (family?: string): Promise<GameEvent[]> =>
     request(`/events${family ? `?family=${encodeURIComponent(family)}` : ''}`),
 
-  getMySquads: (): Promise<Squad[]> => request('/squads/mine'),
+  getMySquads: (params: { quadrantId?: number; starChartId?: number } = {}): Promise<Squad[]> => {
+    const query = new URLSearchParams();
+    if (params.quadrantId != null) query.set('quadrant_id', String(params.quadrantId));
+    if (params.starChartId != null) query.set('star_chart_id', String(params.starChartId));
+    const qs = query.toString();
+    return request(`/squads/mine${qs ? `?${qs}` : ''}`);
+  },
   createSquad: (payload: SquadIn): Promise<Squad> =>
     request('/squads', { method: 'POST', body: JSON.stringify(payload) }),
   updateSquad: (squadId: number, payload: SquadIn): Promise<Squad> =>

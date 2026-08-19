@@ -269,6 +269,17 @@ export function CurrencyCornerBadge({ currencyType }: { currencyType?: string | 
   );
 }
 
+// Same top-right corner overlay RequirementPortrait stamps for an Omicron
+// requirement, standalone here for contexts (Squad Builder) that only know
+// "this unit needs Omicron somewhere in the chart", not a specific
+// SystemRequirement row to read omicron_ability_ids off of. Same caller
+// contract as CurrencyCornerBadge - wrap the portrait in
+// .unit-card-portrait-wrap.
+export function OmicronCornerBadge({ needsOmicron }: { needsOmicron: boolean }) {
+  if (!needsOmicron) return null;
+  return <CornerIcon corner="omicron" src={currencyIcon(OMICRON_ICON_FILE)} label="Needs Omicron Material" />;
+}
+
 interface OmicronBadgeProps {
   unit: Unit | null | undefined;
   omicronAbilityIds: string[];
