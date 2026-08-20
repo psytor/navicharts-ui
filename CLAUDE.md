@@ -186,8 +186,10 @@ between the two services for this rule, just convention.
 
 **`POST /{id}/copy`** (any authenticated user, any chart they can view) is
 the non-admin counterpart to Publish - forks into a new **private** chart
-the caller owns, Squads included (unlike Publish, which excludes them).
-"Create a copy" in the chart header, shown whenever you're viewing a chart
+the caller owns. Both Copy and Publish clone Squads too (as of
+2026-08-20 - Publish originally excluded them, changed after a user found
+squads missing from a curated chart). "Create a copy" in the chart header,
+shown whenever you're viewing a chart
 you don't own. Unlike Bookmark, this has no toggle/undo state - it's a
 one-shot action that switches you straight into the new copy.
 
