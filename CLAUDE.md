@@ -4,7 +4,20 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Docs current as of:** commit `029e2e6`. That session's work (on top of
+**Docs current as of:** commit `PENDING` (this session's own commit -
+update this hash once committed). This session's work (on top of
+`bd3f11a`): the backend gained
+`PATCH /{id}/name` (rename), `POST /{id}/copy` (non-admin fork into a
+private chart, Squads included), and `GET /admin/shared`; the frontend
+picked up all three (inline rename in the chart header, "Create a copy"
+button, an admin-only "All Shared (Admin)" library section) and, more
+importantly, fixed `canModify` - it had hard-coded `curated` as always
+read-only in the UI regardless of role, which had drifted out of sync with
+the backend's actual `_can_modify` (which grants admins in-place edit
+rights on curated charts). See the "App architecture" section below for
+the corrected rule.
+
+Prior session's work (on top of
 `c39dbca`): the Visualise tab's flow graph (`flowGraph.ts`) got two related
 changes. First, a routing fix - unlock edges (System->Waypoint) used to be
 a plain unrouted `smoothstep`, unlike prerequisite edges, so a line could
@@ -161,10 +174,34 @@ anything and would otherwise see actions that just 401.
 `app-header` Card), not only on library cards — reachable the moment you
 land on a chart via a share link, without a detour through the library.
 
-**`canModify`** mirrors the backend's `_can_modify` exactly: `curated` is
-always read-only in the UI regardless of role — an admin edits curated
-content indirectly, by publishing a new snapshot from the library, never
-by mutating an already-curated chart in place.
+**`canModify`** mirrors the backend's `_can_modify` exactly: `private`/
+`guild`/`shared` are owner-only, `curated` is admin-only (not owner-gated -
+curated charts have no owner). An admin edits curated content **in place**
+here, the same tree UI as any other chart - this was previously
+(2026-05-19–2026-08-20) hard-coded to treat `curated` as unconditionally
+read-only regardless of role, which had drifted from the backend after it
+gained the admin bypass; fixed once the drift was noticed. If you touch
+`canModify` again, keep it in sync with `navicharts/src/api/v1/endpoints/
+star_charts.py`'s `_can_modify` - there's no shared source of truth
+between the two services for this rule, just convention.
+
+**`POST /{id}/copy`** (any authenticated user, any chart they can view) is
+the non-admin counterpart to Publish - forks into a new **private** chart
+the caller owns, Squads included (unlike Publish, which excludes them).
+"Create a copy" in the chart header, shown whenever you're viewing a chart
+you don't own. Unlike Bookmark, this has no toggle/undo state - it's a
+one-shot action that switches you straight into the new copy.
+
+**Chart rename** (`PATCH /{id}/name`) lives inline in the chart header -
+click the pencil next to the title (only rendered when `canModify`) to
+swap the `<h1>` for an `Input` + Save/Cancel. No dedicated editor
+component for this like `QuadrantBuilder` - a single string field didn't
+warrant one.
+
+**`GET /star-charts/admin/shared`** backs an admin-only "All Shared
+(Admin)" library section (`StarChartLibrary.tsx`) - the one place an admin
+can browse every Shared chart across every owner, since Shared is
+otherwise link-only. Only fetched when `user.role === 'admin'`.
 
 **Delete confirmation** uses an established arm-then-confirm pattern
 (local `confirmingDelete` boolean, button relabels to "Confirm?" for 3s via

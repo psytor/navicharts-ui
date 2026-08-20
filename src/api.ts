@@ -80,10 +80,15 @@ export const api = {
     }),
   deleteStarChart: (id: number): Promise<void> =>
     request(`/star-charts/${id}`, { method: 'DELETE' }),
+  renameStarChart: (id: number, name: string): Promise<StarChartListItem> =>
+    request(`/star-charts/${id}/name`, { method: 'PATCH', body: JSON.stringify({ name }) }),
   publishStarChart: (id: number): Promise<StarChartListItem> =>
     request(`/star-charts/${id}/publish`, { method: 'POST' }),
+  copyStarChart: (id: number, allyCode?: string | null): Promise<StarChartListItem> =>
+    request(`/star-charts/${id}/copy${allyCode ? `?ally_code=${encodeURIComponent(allyCode)}` : ''}`, { method: 'POST' }),
   getGuildStarCharts: (allyCode: string): Promise<StarChartListItem[]> =>
     request(`/star-charts/guild?ally_code=${encodeURIComponent(allyCode)}`),
+  getAllSharedStarCharts: (): Promise<StarChartListItem[]> => request('/star-charts/admin/shared'),
   getBookmarkedStarCharts: (): Promise<StarChartListItem[]> => request('/bookmarks'),
   createBookmark: (starChartId: number, allyCode?: string | null): Promise<StarChartListItem> =>
     request('/bookmarks', {

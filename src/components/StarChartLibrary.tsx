@@ -225,6 +225,7 @@ interface StarChartLibraryProps {
   curatedCharts: StarChartListItem[];
   guildCharts: StarChartListItem[];
   bookmarkedCharts: StarChartListItem[];
+  allSharedCharts: StarChartListItem[];
   userId: number | null;
   isAdmin: boolean;
   selectedAllyCode: string | null;
@@ -266,7 +267,7 @@ function Section({
 }
 
 export function StarChartLibrary({
-  myCharts, curatedCharts, guildCharts, bookmarkedCharts,
+  myCharts, curatedCharts, guildCharts, bookmarkedCharts, allSharedCharts,
   userId, isAdmin, selectedAllyCode, onSwitch, onChanged, onCreated,
 }: StarChartLibraryProps) {
   const [creating, setCreating] = useState(false);
@@ -297,6 +298,7 @@ export function StarChartLibrary({
       <Section title="Mine" charts={myCharts} {...sectionProps} />
       <Section title="Guild" charts={guildCharts} {...sectionProps} />
       <Section title="Bookmarked" charts={bookmarkedCharts} {...sectionProps} />
+      {isAdmin && <Section title="All Shared (Admin)" charts={allSharedCharts} {...sectionProps} />}
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { NavBar, Container, Footer, Card, Button, useAuth } from 'astrogators-shared-ui';
+import { NavBar, Container, Footer, Card, Button, Input, useAuth } from 'astrogators-shared-ui';
 import { api, getShareUrl } from './api';
 import { Quadrant } from './components/Quadrant';
 import { QuadrantBuilder } from './components/QuadrantBuilder';
@@ -30,6 +30,7 @@ function App() {
   const [curatedCharts, setCuratedCharts] = useState<StarChartListItem[]>([]);
   const [guildCharts, setGuildCharts] = useState<StarChartListItem[]>([]);
   const [bookmarkedCharts, setBookmarkedCharts] = useState<StarChartListItem[]>([]);
+  const [allSharedCharts, setAllSharedCharts] = useState<StarChartListItem[]>([]);
   const [appMode, setAppMode] = useState<AppMode>(() => (chartIdFromUrl() != null ? 'chart' : 'library'));
   const [activeStarChartId, setActiveStarChartId] = useState<number | null>(() => chartIdFromUrl());
   const [starChart, setStarChart] = useState<StarChart | null>(null);
@@ -42,6 +43,10 @@ function App() {
   const [editingQuadrantId, setEditingQuadrantId] = useState<number | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [renamingChart, setRenamingChart] = useState(false);
+  const [chartNameDraft, setChartNameDraft] = useState('');
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [copyBusy, setCopyBusy] = useState(false);
 
   const loadStarChartDetail = useCallback(async (starChartId: number) => {
     try {
@@ -64,16 +69,18 @@ function App() {
       // unauthenticated, just an empty list. Guild/bookmarked need
       // ally_code/a logged-in user respectively - skip rather than error
       // when those preconditions aren't met yet.
-      const [mine, curated, guild, bookmarked] = await Promise.all([
+      const [mine, curated, guild, bookmarked, allShared] = await Promise.all([
         user ? api.getMyStarCharts().catch(() => []) : Promise.resolve([]),
         api.getCuratedStarCharts().catch(() => []),
         selectedAllyCode ? api.getGuildStarCharts(selectedAllyCode).catch(() => []) : Promise.resolve([]),
         user ? api.getBookmarkedStarCharts().catch(() => []) : Promise.resolve([]),
+        user?.role === 'admin' ? api.getAllSharedStarCharts().catch(() => []) : Promise.resolve([]),
       ]);
       setMyCharts(mine);
       setCuratedCharts(curated);
       setGuildCharts(guild);
       setBookmarkedCharts(bookmarked);
+      setAllSharedCharts(allShared);
     } catch (e) {
       setError((e as Error).message);
     }
@@ -192,20 +199,21 @@ function App() {
     }
   }
 
-  // Curated charts are admin-collective - always read-only here regardless
-  // of who's viewing it, mirroring the backend's _can_modify exactly (an
-  // admin edits curated content indirectly, by publishing a new snapshot
-  // from the library, never by mutating an already-curated chart in
-  // place). Private/guild/shared charts are editable by their owner only.
-  const canModify =
-    !!starChart && !!user &&
-    starChart.visibility !== 'curated' &&
-    starChart.owner_user_id === Number(user.id);
   const isAdmin = user?.role === 'admin';
   const isOwner = !!starChart && !!user && starChart.owner_user_id === Number(user.id);
+  // Mirrors the backend's _can_modify exactly: private/guild/shared are
+  // owner-only, curated is admin-only (not owner-gated at all - curated
+  // charts have no owner). An admin edits curated content in place here,
+  // not just indirectly via publishing a new snapshot.
+  const canModify =
+    !!starChart && !!user &&
+    (starChart.visibility === 'curated' ? isAdmin : starChart.owner_user_id === Number(user.id));
   const isBookmarked = !!starChart && bookmarkedCharts.some((c) => c.id === starChart.id);
   const canBookmark = !!starChart && !!user && !isOwner;
   const canCopyLink = !!starChart && isOwner && starChart.visibility === 'shared';
+  // Forking your own chart is harmless but pointless - only offer it for
+  // charts you don't already own.
+  const canCopyChart = !!starChart && !!user && !isOwner;
 
   async function handleBookmarkToggle() {
     if (!starChart) return;
@@ -232,6 +240,43 @@ function App() {
     });
   }
 
+  function startRenamingChart() {
+    if (!starChart) return;
+    setChartNameDraft(starChart.name);
+    setRenamingChart(true);
+  }
+
+  async function handleRenameSave() {
+    if (!starChart || !chartNameDraft.trim()) return;
+    setRenameBusy(true);
+    try {
+      await api.renameStarChart(starChart.id, chartNameDraft.trim());
+      setRenamingChart(false);
+      await loadStarChart();
+    } catch (e) {
+      setSyncMessage(`Rename failed: ${(e as Error).message}`);
+    } finally {
+      setRenameBusy(false);
+    }
+  }
+
+  // Forks this chart (any visible one - curated, shared, own guild's guild
+  // charts, or your own) into a brand-new private chart you own, then
+  // switches straight into it - same post-create flow as making a chart
+  // from scratch.
+  async function handleCopyChart() {
+    if (!starChart) return;
+    setCopyBusy(true);
+    try {
+      const copy = await api.copyStarChart(starChart.id, selectedAllyCode);
+      await handleStarChartCreated(copy);
+    } catch (e) {
+      setSyncMessage(`Copy failed: ${(e as Error).message}`);
+    } finally {
+      setCopyBusy(false);
+    }
+  }
+
   const rightExtras = (
     <div className="sync-controls">
       <Button variant="outline" size="sm" onClick={goToLibrary} disabled={appMode === 'library'}>
@@ -253,6 +298,7 @@ function App() {
             curatedCharts={curatedCharts}
             guildCharts={guildCharts}
             bookmarkedCharts={bookmarkedCharts}
+            allSharedCharts={allSharedCharts}
             userId={user ? Number(user.id) : null}
             isAdmin={isAdmin}
             selectedAllyCode={selectedAllyCode}
@@ -271,13 +317,41 @@ function App() {
           <>
             <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--color-primary)" padding="md" className="app-header">
               <div>
-                <h1>{starChart.name}</h1>
+                {renamingChart ? (
+                  <div className="chart-rename-form">
+                    <Input
+                      value={chartNameDraft}
+                      onChange={(e) => setChartNameDraft(e.target.value)}
+                      autoFocus
+                    />
+                    <Button variant="primary" size="sm" onClick={handleRenameSave} disabled={renameBusy || !chartNameDraft.trim()}>
+                      Save
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setRenamingChart(false)} disabled={renameBusy}>
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="chart-title-row">
+                    <h1>{starChart.name}</h1>
+                    {canModify && (
+                      <button className="chart-rename-btn" title="Rename star chart" onClick={startRenamingChart}>
+                        ✎
+                      </button>
+                    )}
+                  </div>
+                )}
                 {starChart.source && <p className="star-chart-source">{starChart.source}</p>}
               </div>
               <div className="app-header-actions">
                 {canCopyLink && (
                   <Button variant="outline" size="sm" onClick={handleCopyLink}>
                     {linkCopied ? 'Copied!' : 'Copy link'}
+                  </Button>
+                )}
+                {canCopyChart && (
+                  <Button variant="outline" size="sm" onClick={handleCopyChart} disabled={copyBusy}>
+                    {copyBusy ? 'Copying...' : 'Create a copy'}
                   </Button>
                 )}
                 {canBookmark && (
