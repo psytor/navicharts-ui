@@ -4,9 +4,31 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Docs current as of:** commit `c39dbca`. That session's work (this
-session, on top of `c39dbca`): scoped `Squad Builder` to a Quadrant instead
-of the whole chart. It used to render once, at the very bottom of the
+**Docs current as of:** commit `029e2e6`. That session's work (on top of
+`c39dbca`): the Visualise tab's flow graph (`flowGraph.ts`) got two related
+changes. First, a routing fix - unlock edges (System->Waypoint) used to be
+a plain unrouted `smoothstep`, unlike prerequisite edges, so a line could
+cut straight through an unrelated card; both edge kinds now share one
+obstacle-aware `routedEdge` type (`buildRoutedFlowEdge`), and edge paths
+are recomputed once via `recomputeEdgePaths` after React Flow reports real
+measured node sizes (`FlowView.tsx`'s `useNodesInitialized`), since the
+dagre layout's own hand-estimated card sizes can drift from the rendered
+CSS. Second, a goal-centered radial layout: `detectGoalSector` derives a
+Quadrant's convergence point purely from its existing unlock-edge
+structure (no schema change - the Waypoint with the highest unlock
+in-degree, gated on also living in its own dedicated Sector with 0
+Systems), and `layoutSectorPositionsRadial` arranges the Quadrant's other
+Sectors as spokes around it (with a two-ring fallback past
+`MAX_SECTORS_PER_RING` Sectors, split by which Sectors directly unlock the
+goal). `layoutQuadrantCluster` picks radial vs. the original linear
+`layoutSectorPositions` per-Quadrant; a Quadrant with no clear convergence
+point (still sparse, or genuinely no goal shape) falls back to the linear
+layout untouched. The goal Sector's `SectorGroupNode` renders with a
+`sector-group-node--hub` CSS variant (solid border) instead of the usual
+dashed outline.
+
+Prior session's work (on top of `c39dbca`): scoped `Squad Builder` to a
+Quadrant instead of the whole chart. It used to render once, at the very bottom of the
 entire Plan tab (after every Quadrant card), backed by a `Squad` model
 that was deliberately chart/Quadrant-agnostic. Now `Squad` has a required
 `quadrant_id`, `SquadBuilder` renders inside each `Quadrant` card
