@@ -9,15 +9,18 @@ import type { System, Waypoint, SystemRequirement, Quadrant, Sector } from '../t
 // geometry, obstacle-aware) rather than derived from this edge's own
 // source/target handle positions, so it can duck around unrelated cards -
 // something React Flow's built-in path helpers can't do since they only ever
-// see the two endpoints.
-interface RoutedPrerequisiteEdgeProps {
+// see the two endpoints. Used for both prerequisite (System->System) and
+// unlock (System->Waypoint) edges - both kinds need the same obstacle
+// avoidance, so one edge type covers both instead of unlock edges falling
+// back to a plain unrouted smoothstep.
+interface RoutedFlowEdgeProps {
   data?: { path: string };
   style?: React.CSSProperties;
   markerEnd?: string;
   markerStart?: string;
 }
 
-export function RoutedPrerequisiteEdge({ data, style, markerEnd, markerStart }: RoutedPrerequisiteEdgeProps) {
+export function RoutedFlowEdge({ data, style, markerEnd, markerStart }: RoutedFlowEdgeProps) {
   return <BaseEdge path={data?.path ?? ''} style={style} markerEnd={markerEnd} markerStart={markerStart} />;
 }
 
@@ -124,11 +127,15 @@ export function QuadrantGroupNode({ data }: { data: { quadrant: Quadrant } }) {
 // One Sector's dashed box, nested inside its Quadrant's box - same visual
 // language as QuadrantGroupNode used to have on its own before color moved
 // down a level, just colored per-Sector instead of per-Quadrant now.
-export function SectorGroupNode({ data }: { data: { sector: Sector } }) {
-  const { sector } = data;
+// isHub marks the Sector flowGraph.ts's detectGoalSector picked as this
+// Quadrant's center (see App.css's .sector-group-node--hub) - a solid
+// rather than dashed outline, so the hub reads as the one the others
+// radiate around instead of just another same-weight box in the ring.
+export function SectorGroupNode({ data }: { data: { sector: Sector; isHub?: boolean } }) {
+  const { sector, isHub } = data;
   const color = sector.color || '#666';
   return (
-    <div className="sector-group-node" style={{ color }}>
+    <div className={`sector-group-node ${isHub ? 'sector-group-node--hub' : ''}`} style={{ color }}>
       <div className="sector-group-node-label">
         <span className="quadrant-dot" style={{ background: color }} />
         <span className="quadrant-name">{sector.name}</span>

@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
-import { ReactFlow, Controls, MiniMap, type Node } from '@xyflow/react';
+import { useEffect, useMemo, useState } from 'react';
+import { ReactFlow, ReactFlowProvider, Controls, MiniMap, useNodesInitialized, useReactFlow, type Node, type Edge } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { buildFlowGraph } from '../flowGraph';
-import { SystemFlowNode, WaypointFlowNode, QuadrantGroupNode, SectorGroupNode, RoutedPrerequisiteEdge } from './FlowNodes';
+import { buildFlowGraph, recomputeEdgePaths } from '../flowGraph';
+import { SystemFlowNode, WaypointFlowNode, QuadrantGroupNode, SectorGroupNode, RoutedFlowEdge } from './FlowNodes';
 import { SquadList } from './SquadBuilder';
 import type { StarChart, Sector } from '../types';
 
@@ -14,7 +14,7 @@ const nodeTypes = {
 };
 
 const edgeTypes = {
-  routedPrerequisite: RoutedPrerequisiteEdge,
+  routedEdge: RoutedFlowEdge,
 };
 
 // The MiniMap fills every node with a flat color of its own - with no
@@ -31,7 +31,43 @@ function minimapNodeColor(node: Node): string {
 }
 
 export function FlowView({ starChart, quadrantId }: { starChart: StarChart; quadrantId?: number | null }) {
-  const { nodes, edges } = useMemo(() => buildFlowGraph(starChart, quadrantId), [starChart, quadrantId]);
+  return (
+    <ReactFlowProvider>
+      <FlowCanvas starChart={starChart} quadrantId={quadrantId} />
+    </ReactFlowProvider>
+  );
+}
+
+// Split out from FlowView so useNodesInitialized()/useReactFlow() below
+// have the ReactFlowProvider context they need (those hooks only work in a
+// descendant of the provider, not in the same component that also renders
+// <ReactFlow> itself).
+function FlowCanvas({ starChart, quadrantId }: { starChart: StarChart; quadrantId?: number | null }) {
+  const built = useMemo(() => buildFlowGraph(starChart, quadrantId), [starChart, quadrantId]);
+  const [edges, setEdges] = useState<Edge[]>(built.edges);
+  // Resets `edges` whenever a new layout is built, without the extra
+  // render an effect-based sync would cost - adjusting state during render
+  // (rather than in a useEffect) for a value that's purely derived from a
+  // prop/memo is the React-recommended pattern for this.
+  const [syncedBuilt, setSyncedBuilt] = useState(built);
+  if (built !== syncedBuilt) {
+    setSyncedBuilt(built);
+    setEdges(built.edges);
+  }
+  const { getNodes } = useReactFlow();
+
+  // flowGraph.ts's dagre pass estimates each card's size (see its own size
+  // constants comment) - those estimates can drift from the real rendered
+  // CSS size, which is exactly what lets a routed edge cut through a card
+  // instead of ducking around it. Once React Flow reports every node's real
+  // measured size, recompute just the edge paths against corrected obstacle
+  // rects - node positions are left exactly as dagre placed them, so
+  // nothing visibly reflows after first paint.
+  const nodesInitialized = useNodesInitialized();
+  useEffect(() => {
+    if (!nodesInitialized) return;
+    setEdges((current) => recomputeEdgePaths(getNodes(), current, built.absoluteRects));
+  }, [nodesInitialized, built, getNodes]);
 
   return (
     <div className="flow-view">
@@ -40,7 +76,7 @@ export function FlowView({ starChart, quadrantId }: { starChart: StarChart; quad
         <div className="chamfered-diagonal-border chamfered-diagonal-tr" style={{ color: 'var(--color-primary)' }} />
         <div className="chamfered-diagonal-border chamfered-diagonal-bl" style={{ color: 'var(--color-primary)' }} />
         <div className="chamfered-diagonal-border chamfered-diagonal-br" style={{ color: 'var(--color-primary)' }} />
-        <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView minZoom={0.1}>
+        <ReactFlow nodes={built.nodes} edges={edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes} fitView minZoom={0.1}>
           <Controls />
           <MiniMap pannable zoomable nodeColor={minimapNodeColor} nodeStrokeWidth={0} maskColor="rgba(0, 0, 0, 0.55)" />
         </ReactFlow>
