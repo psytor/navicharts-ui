@@ -4,8 +4,7 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Docs current as of:** commit `PENDING` (this session's own commit -
-update this hash once committed). This session's work (on top of
+**Docs current as of:** commit `3e4d3af`. That session's work (on top of
 `bd3f11a`): the backend gained
 `PATCH /{id}/name` (rename), `POST /{id}/copy` (non-admin fork into a
 private chart, Squads included), and `GET /admin/shared`; the frontend
