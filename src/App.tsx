@@ -74,7 +74,9 @@ function App() {
         api.getCuratedStarCharts().catch(() => []),
         selectedAllyCode ? api.getGuildStarCharts(selectedAllyCode).catch(() => []) : Promise.resolve([]),
         user ? api.getBookmarkedStarCharts().catch(() => []) : Promise.resolve([]),
-        user?.role === 'admin' ? api.getAllSharedStarCharts().catch(() => []) : Promise.resolve([]),
+        user?.role === 'admin' || user?.role === 'mod'
+          ? api.getAllSharedStarCharts().catch(() => [])
+          : Promise.resolve([]),
       ]);
       setMyCharts(mine);
       setCuratedCharts(curated);
@@ -200,14 +202,15 @@ function App() {
   }
 
   const isAdmin = user?.role === 'admin';
+  const isMod = user?.role === 'mod';
   const isOwner = !!starChart && !!user && starChart.owner_user_id === Number(user.id);
   // Mirrors the backend's _can_modify exactly: private/guild/shared are
-  // owner-only, curated is admin-only (not owner-gated at all - curated
-  // charts have no owner). An admin edits curated content in place here,
-  // not just indirectly via publishing a new snapshot.
+  // owner-only, curated is admin-OR-mod (not owner-gated at all - curated
+  // charts have no owner). An admin/mod edits curated content in place
+  // here, not just indirectly via publishing a new snapshot.
   const canModify =
     !!starChart && !!user &&
-    (starChart.visibility === 'curated' ? isAdmin : starChart.owner_user_id === Number(user.id));
+    (starChart.visibility === 'curated' ? isAdmin || isMod : starChart.owner_user_id === Number(user.id));
   const isBookmarked = !!starChart && bookmarkedCharts.some((c) => c.id === starChart.id);
   const canBookmark = !!starChart && !!user && !isOwner;
   const canCopyLink = !!starChart && isOwner && starChart.visibility === 'shared';
@@ -301,6 +304,7 @@ function App() {
             allSharedCharts={allSharedCharts}
             userId={user ? Number(user.id) : null}
             isAdmin={isAdmin}
+            isMod={isMod}
             selectedAllyCode={selectedAllyCode}
             onSwitch={openChart}
             onChanged={handleLibraryChanged}

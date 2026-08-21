@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Card, Badge, Select, Button, Input } from 'astrogators-shared-ui';
+import { useEffect, useState } from 'react';
+import { Card, Badge, Select, Button, Input, fetchUsernames } from 'astrogators-shared-ui';
 import { api, getShareUrl } from '../api';
 import type { ChartVisibility, StarChartListItem, StarChartCreateIn } from '../types';
 
@@ -74,20 +74,29 @@ interface ChartCardProps {
   isLoggedIn: boolean;
   isOwner: boolean;
   isAdmin: boolean;
+  isMod: boolean;
   isBookmarked: boolean;
+  ownerUsername: string | undefined;
   selectedAllyCode: string | null;
   onSwitch: (id: number) => void;
   onChanged: (deletedActiveChart?: boolean) => void | Promise<void>;
 }
 
-function ChartCard({ chart, isLoggedIn, isOwner, isAdmin, isBookmarked, selectedAllyCode, onSwitch, onChanged }: ChartCardProps) {
+function ChartCard({ chart, isLoggedIn, isOwner, isAdmin, isMod, isBookmarked, ownerUsername, selectedAllyCode, onSwitch, onChanged }: ChartCardProps) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const canDelete = isOwner || isAdmin;
-  const canPublish = isAdmin && (chart.visibility === 'shared' || chart.visibility === 'guild');
+  const canCurate = isAdmin || isMod;
+  // Mirrors the backend's three-tier _can_delete exactly: admin gets any
+  // chart, mod gets curated-only (that IS how a mod un-publishes
+  // something), everyone else is owner-only. Do NOT collapse this to
+  // `isOwner || isAdmin || isMod` - that would silently grant mods delete
+  // on charts the backend correctly refuses them, and the button would
+  // just 403 on click.
+  const canDelete = isOwner || isAdmin || (isMod && chart.visibility === 'curated');
+  const canPublish = canCurate && (chart.visibility === 'shared' || chart.visibility === 'guild');
   // Bookmarking is a per-user record (POST /bookmarks requires auth) - an
   // anonymous visitor isn't the owner of anything either, so `!isOwner`
   // alone was true for every card they looked at, showing a Bookmark button
@@ -168,6 +177,9 @@ function ChartCard({ chart, isLoggedIn, isOwner, isAdmin, isBookmarked, selected
         </Badge>
       </div>
       {chart.source && <p className="library-chart-card-source">{chart.source}</p>}
+      {!isOwner && ownerUsername && (
+        <p className="library-chart-card-owner">by {ownerUsername}</p>
+      )}
 
       <div className="library-chart-card-actions">
         <Button variant="outline" size="sm" onClick={() => onSwitch(chart.id)} disabled={busy}>
@@ -228,6 +240,7 @@ interface StarChartLibraryProps {
   allSharedCharts: StarChartListItem[];
   userId: number | null;
   isAdmin: boolean;
+  isMod: boolean;
   selectedAllyCode: string | null;
   onSwitch: (id: number) => void;
   onChanged: (deletedActiveChart?: boolean) => void | Promise<void>;
@@ -237,6 +250,8 @@ interface StarChartLibraryProps {
 interface SectionCommonProps {
   userId: number | null;
   isAdmin: boolean;
+  isMod: boolean;
+  usernames: Record<number, string>;
   selectedAllyCode: string | null;
   onSwitch: (id: number) => void;
   onChanged: (deletedActiveChart?: boolean) => void | Promise<void>;
@@ -244,7 +259,7 @@ interface SectionCommonProps {
 }
 
 function Section({
-  title, charts, userId, bookmarkedIds, ...rest
+  title, charts, userId, bookmarkedIds, usernames, ...rest
 }: { title: string; charts: StarChartListItem[] } & SectionCommonProps) {
   if (charts.length === 0) return null;
   return (
@@ -258,6 +273,7 @@ function Section({
             isLoggedIn={userId != null}
             isOwner={userId != null && chart.owner_user_id === userId}
             isBookmarked={bookmarkedIds.has(chart.id)}
+            ownerUsername={chart.owner_user_id != null ? usernames[chart.owner_user_id] : undefined}
             {...rest}
           />
         ))}
@@ -268,14 +284,34 @@ function Section({
 
 export function StarChartLibrary({
   myCharts, curatedCharts, guildCharts, bookmarkedCharts, allSharedCharts,
-  userId, isAdmin, selectedAllyCode, onSwitch, onChanged, onCreated,
+  userId, isAdmin, isMod, selectedAllyCode, onSwitch, onChanged, onCreated,
 }: StarChartLibraryProps) {
   const [creating, setCreating] = useState(false);
+  const [usernames, setUsernames] = useState<Record<number, string>>({});
   const bookmarkedIds = new Set(bookmarkedCharts.map((c) => c.id));
-  const sectionProps = { userId, isAdmin, selectedAllyCode, onSwitch, onChanged, bookmarkedIds };
+  const canCurate = isAdmin || isMod;
+  const sectionProps = { userId, isAdmin, isMod, usernames, selectedAllyCode, onSwitch, onChanged, bookmarkedIds };
 
   const noCharts =
     myCharts.length === 0 && curatedCharts.length === 0 && guildCharts.length === 0 && bookmarkedCharts.length === 0;
+
+  // Batch-resolve every rendered chart's owner to a username in one call,
+  // rather than one lookup per card. Most useful in "All Shared", where the
+  // author isn't otherwise knowable at all.
+  useEffect(() => {
+    const allCharts = [...myCharts, ...curatedCharts, ...guildCharts, ...bookmarkedCharts, ...allSharedCharts];
+    const ownerIds = [
+      ...new Set(allCharts.map((c) => c.owner_user_id).filter((id): id is number => id !== null)),
+    ];
+    if (ownerIds.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setUsernames({});
+      return;
+    }
+    fetchUsernames(ownerIds)
+      .then(setUsernames)
+      .catch(() => setUsernames({}));
+  }, [myCharts, curatedCharts, guildCharts, bookmarkedCharts, allSharedCharts]);
 
   function handleCreated(chart: StarChartListItem) {
     setCreating(false);
@@ -298,7 +334,7 @@ export function StarChartLibrary({
       <Section title="Mine" charts={myCharts} {...sectionProps} />
       <Section title="Guild" charts={guildCharts} {...sectionProps} />
       <Section title="Bookmarked" charts={bookmarkedCharts} {...sectionProps} />
-      {isAdmin && <Section title="All Shared (Admin)" charts={allSharedCharts} {...sectionProps} />}
+      {canCurate && <Section title="All Shared" charts={allSharedCharts} {...sectionProps} />}
     </div>
   );
 }

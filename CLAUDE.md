@@ -4,7 +4,19 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Docs current as of:** commit `3e4d3af`. That session's work (on top of
+**Docs current as of:** commit (pending — this session's work, not yet
+committed at doc-write time). Added a `mod` role alongside `admin`
+everywhere curated-chart publish/manage happens (`canModify`'s curated
+branch, `canPublish`, the "All Shared" fetch/section gate — renamed from
+"All Shared (Admin)"), while `ChartCard`'s `canDelete` deliberately stayed
+narrower — mirroring the backend's three-tier `_can_delete` (mod: curated
+only) rather than just adding `isMod` alongside `isAdmin`. Also added
+owner-username display on library cards via shared-ui's new
+`fetchUsernames` (batched once per render), currently blocked on that
+package's `npm publish`. See "App architecture"'s new "Mod role" note and
+"Owner usernames" note for the specifics.
+
+Prior session's work, commit `3e4d3af` (on top of
 `bd3f11a`): the backend gained
 `PATCH /{id}/name` (rename), `POST /{id}/copy` (non-admin fork into a
 private chart, Squads included), and `GET /admin/shared`; the frontend
@@ -174,15 +186,29 @@ anything and would otherwise see actions that just 401.
 land on a chart via a share link, without a detour through the library.
 
 **`canModify`** mirrors the backend's `_can_modify` exactly: `private`/
-`guild`/`shared` are owner-only, `curated` is admin-only (not owner-gated -
-curated charts have no owner). An admin edits curated content **in place**
-here, the same tree UI as any other chart - this was previously
+`guild`/`shared` are owner-only, `curated` is admin-OR-mod (not owner-gated -
+curated charts have no owner). An admin/mod edits curated content **in
+place** here, the same tree UI as any other chart - this was previously
 (2026-05-19–2026-08-20) hard-coded to treat `curated` as unconditionally
 read-only regardless of role, which had drifted from the backend after it
 gained the admin bypass; fixed once the drift was noticed. If you touch
 `canModify` again, keep it in sync with `navicharts/src/api/v1/endpoints/
 star_charts.py`'s `_can_modify` - there's no shared source of truth
 between the two services for this rule, just convention.
+
+**Mod role: publish/manage parity with admin, delete does NOT match.**
+`isMod` (`user?.role === 'mod'`) now sits alongside `isAdmin` everywhere
+curated-chart publish/manage happens: `canModify`'s curated branch, the
+library's `canPublish` and the "All Shared" section fetch/visibility gate.
+**`ChartCard`'s `canDelete` in `StarChartLibrary.tsx` deliberately does
+NOT become `isOwner || isAdmin || isMod`** - it mirrors the backend's
+three-tier `_can_delete` exactly: `isOwner || isAdmin || (isMod &&
+chart.visibility === 'curated')`. A mod can delete/un-publish a curated
+chart (that's what un-publishing means here) but not another user's
+private/guild/shared chart - admins keep their existing broader
+any-chart delete power alone. If you touch `canDelete` again, keep this
+three-way split in sync with the backend's `_can_delete`, same convention
+caveat as `canModify` above.
 
 **`POST /{id}/copy`** (any authenticated user, any chart they can view) is
 the non-admin counterpart to Publish - forks into a new **private** chart
@@ -199,10 +225,22 @@ swap the `<h1>` for an `Input` + Save/Cancel. No dedicated editor
 component for this like `QuadrantBuilder` - a single string field didn't
 warrant one.
 
-**`GET /star-charts/admin/shared`** backs an admin-only "All Shared
-(Admin)" library section (`StarChartLibrary.tsx`) - the one place an admin
-can browse every Shared chart across every owner, since Shared is
-otherwise link-only. Only fetched when `user.role === 'admin'`.
+**`GET /star-charts/admin/shared`** backs the "All Shared" library section
+(`StarChartLibrary.tsx`) - the one place an admin or mod can browse every
+Shared chart across every owner, since Shared is otherwise link-only.
+Fetched when `user.role === 'admin' || user.role === 'mod'` (renamed from
+"All Shared (Admin)" now that mods see it too).
+
+**Owner usernames** render via shared-ui's `fetchUsernames` — batched once
+per `StarChartLibrary` render over every distinct `owner_user_id` across
+all five sections (not per-card), stored in a local `usernames` map and
+passed down through `sectionProps`. `ChartCard` shows "by {username}"
+under the chart name whenever it isn't the viewer's own chart and a
+username resolved. **Requires `astrogators-shared-ui` >= 0.11.0** — built
+and version-bumped in that submodule but not yet `npm publish`ed (needs
+the user's interactive npm login). Until published and this app's
+dependency is bumped + reinstalled, `StarChartLibrary.tsx`'s
+`fetchUsernames` import fails type-check.
 
 **Delete confirmation** uses an established arm-then-confirm pattern
 (local `confirmingDelete` boolean, button relabels to "Confirm?" for 3s via

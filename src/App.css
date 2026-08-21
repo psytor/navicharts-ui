@@ -163,6 +163,12 @@
   margin: 4px 0 0;
 }
 
+.library-chart-card-owner {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
 .library-chart-card-actions {
   display: flex;
   flex-wrap: wrap;
