@@ -4,8 +4,7 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Docs current as of:** commit (pending — this session's work, not yet
-committed at doc-write time). Added a `mod` role alongside `admin`
+**Docs current as of:** commit `1aedecd`. Added a `mod` role alongside `admin`
 everywhere curated-chart publish/manage happens (`canModify`'s curated
 branch, `canPublish`, the "All Shared" fetch/section gate — renamed from
 "All Shared (Admin)"), while `ChartCard`'s `canDelete` deliberately stayed
