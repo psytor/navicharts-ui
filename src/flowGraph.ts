@@ -1,5 +1,5 @@
 import dagre from '@dagrejs/dagre';
-import type { Node, Edge } from '@xyflow/react';
+import type { Node, Edge, SmoothStepPathOptions } from '@xyflow/react';
 import type { StarChart, Quadrant, Sector, System, Waypoint } from './types';
 
 // Sized for RequirementPortrait's 56px corner-badge portraits (see
@@ -737,8 +737,12 @@ function buildRoutedFlowEdge(e: RawEdge, absoluteRects: Map<string, Rect>, nodeC
 
   if (!sourceRect || !targetRect) {
     // shouldn't happen (every system/waypoint has a resolved rect), but
-    // degrade to the plain router rather than dropping the edge
-    return {
+    // degrade to the plain router rather than dropping the edge.
+    // pathOptions only exists on the 'smoothstep' edge variant, not the
+    // base Edge type buildRoutedFlowEdge returns - typed explicitly here
+    // so the object literal is checked against a type that actually
+    // declares it, rather than tripping an excess-property error.
+    const fallbackEdge: Edge & { pathOptions?: SmoothStepPathOptions } = {
       id: e.id,
       source: e.source,
       target: e.target,
@@ -748,6 +752,7 @@ function buildRoutedFlowEdge(e: RawEdge, absoluteRects: Map<string, Rect>, nodeC
       zIndex: crossesBoundary ? 0.5 : 0,
       style: baseStyle,
     };
+    return fallbackEdge;
   }
 
   const obstacles = [...absoluteRects.entries()]
