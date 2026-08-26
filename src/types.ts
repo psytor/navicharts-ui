@@ -43,6 +43,7 @@ export interface Unit {
   alignment: string | null;
   unit_type: string;
   is_galactic_legend: boolean;
+  is_obtainable: boolean;
   unlock_event_id: string | null;
   farming_locations: FarmingLocation[];
   abilities: UnitAbility[];
