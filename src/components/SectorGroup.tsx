@@ -33,7 +33,7 @@ export function SectorGroup({ sector, onChange, onMoveUp, onMoveDown, onDelete, 
   }
 
   return (
-    <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={sector.color || '#666'} className="sector-group">
+    <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders edgeColor={sector.color || '#666'} className="sector-group">
       <div className="sector-group-header">
         <span className="quadrant-dot" style={{ background: sector.color || '#666' }} />
         <h3 className="sector-group-name">{sector.name}</h3>

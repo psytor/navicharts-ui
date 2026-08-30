@@ -319,7 +319,7 @@ function App() {
           <div className="app-loading">Loading...</div>
         ) : (
           <>
-            <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--color-primary)" padding="md" className="app-header">
+            <Card chamfered chamferSize="lg" showDiagonalBorders edgeColor="var(--color-primary)" padding="md" className="app-header">
               <div>
                 {renamingChart ? (
                   <div className="chart-rename-form">

@@ -64,7 +64,7 @@ export function Quadrant({ quadrant, starChartId, allQuadrants, onChange, onMove
   }
 
   return (
-    <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--amber)" padding="none" className="quadrant">
+    <Card chamfered chamferSize="lg" showDiagonalBorders edgeColor="var(--amber)" padding="none" className="quadrant">
       <div className="quadrant-header">
         <button className="quadrant-header-toggle" onClick={() => setOpen(!open)}>
           <span className="quadrant-index">{String(quadrant.order_index + 1).padStart(2, '0')}</span>

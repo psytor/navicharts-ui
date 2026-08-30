@@ -304,7 +304,7 @@ function SquadCard({ squad, onEdit, onDelete, omicronUnitIds }: SquadCardProps) 
   const sortedMembers = [...squad.members].sort((a, b) => (b.is_leader ? 1 : 0) - (a.is_leader ? 1 : 0));
 
   return (
-    <Card chamfered chamferSize="sm" showDiagonalBorders diagonalBorderColor="var(--cyan)" padding="sm" className="squad-card">
+    <Card chamfered chamferSize="sm" showDiagonalBorders edgeColor="var(--cyan)" padding="sm" className="squad-card">
       <div className="squad-card-header">
         <span className="squad-card-name">{squad.name}</span>
         <span className="squad-purpose-badge">{squad.purpose}</span>
@@ -402,7 +402,7 @@ export function SquadList({ starChart, quadrantId }: { starChart: StarChart; qua
   }, [starChart]);
 
   return (
-    <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-loadout-panel">
+    <Card chamfered chamferSize="md" showDiagonalBorders edgeColor="var(--cyan)" className="squad-loadout-panel">
       <div className="location-header">Squads</div>
       {!isAuthenticated ? (
         <p className="squad-empty-hint">Log in to see your squads.</p>
@@ -485,7 +485,7 @@ export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
 
   if (!isAuthenticated) {
     return (
-      <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-builder-section">
+      <Card chamfered chamferSize="md" showDiagonalBorders edgeColor="var(--cyan)" className="squad-builder-section">
         <div className="location-header">Squads</div>
         <p className="squad-empty-hint">Log in to build squads.</p>
       </Card>
@@ -493,7 +493,7 @@ export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
   }
 
   return (
-    <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="squad-builder-section">
+    <Card chamfered chamferSize="md" showDiagonalBorders edgeColor="var(--cyan)" className="squad-builder-section">
       <div className="location-header">Squads</div>
 
       {error && <p className="add-quadrant-error">{error}</p>}

@@ -297,7 +297,7 @@ function ShardUnitCard({ entry, rank, snapshots, color }: { entry: LocationEntry
           ancestor location-group Card) - inheriting only gives the straight
           rectangular border, not the diagonal line divs that finish it off
           at the chamfered corners. */}
-      <Card chamfered chamferSize="sm" hoverable padding="sm" showDiagonalBorders diagonalBorderColor={color} className="unit-card">
+      <Card chamfered chamferSize="sm" hoverable padding="sm" showDiagonalBorders edgeColor={color} className="unit-card">
         {/* Shipment boxes group several currencies under one shop (see
             buildLocations) - the corner pin (same overlay RequirementPortrait
             uses in Visualise) points back to the exact currency this unit
@@ -373,12 +373,12 @@ interface RoadmapSubsectionProps {
 function RoadmapSubsection({ className, headerClassName, color, title, intro, groups, snapshots, showRank = true }: RoadmapSubsectionProps) {
   if (groups.length === 0) return null;
   return (
-    <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor={color} className={className}>
+    <Card chamfered chamferSize="md" showDiagonalBorders edgeColor={color} className={className}>
       <div className={`location-header ${headerClassName}`}>{title}</div>
       <p className="roadmap-intro">{intro}</p>
       <div className="roadmap-grid">
         {groups.map(({ key, color: groupColor, entries }) => (
-          <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={groupColor} className="location-group" key={key}>
+          <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders edgeColor={groupColor} className="location-group" key={key}>
             <div className="location-header" style={{ color: groupColor }}>
               {key}
             </div>
@@ -465,7 +465,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
           const isWideEnergy = key === 'Normal Energy';
           const energyGridClass = isWideEnergy ? 'location-card-grid-energy-wide' : 'location-card-grid-energy';
           return (
-            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className={`location-group ${isWideEnergy ? 'location-group-wide' : ''}`} key={key}>
+            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders edgeColor={color} className={`location-group ${isWideEnergy ? 'location-group-wide' : ''}`} key={key}>
               <div className="location-header" style={{ color }}>
                 {key}
               </div>
@@ -498,7 +498,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
       {activeOtherLocations.length > 0 && (
         <div className="roadmap-grid roadmap-grid-secondary">
           {activeOtherLocations.map(({ key, color, entries }) => (
-            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders diagonalBorderColor={color} className="location-group" key={key}>
+            <Card chamfered chamferSize="sm" padding="md" showDiagonalBorders edgeColor={color} className="location-group" key={key}>
               <div className="location-header" style={{ color }}>
                 {key}
               </div>
@@ -533,7 +533,7 @@ export function RoadmapView({ starChart, units }: { starChart: StarChart; units:
         showRank={false}
       />
 
-      <Card chamfered chamferSize="md" showDiagonalBorders diagonalBorderColor="#c084fc" className="gearing-section">
+      <Card chamfered chamferSize="md" showDiagonalBorders edgeColor="#c084fc" className="gearing-section">
         <div className="location-header gearing-header">Gearing Order</div>
         <p className="roadmap-intro">
           Who to gear up first, in priority order - same quadrant order as above.

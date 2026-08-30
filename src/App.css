@@ -375,14 +375,6 @@
   align-items: center;
   width: 76px;
   text-align: center;
-  /* Same fix as .character-card below: Card's border color is a CSS custom
-     property that inherits down the DOM, so without this reset every unit
-     card silently picks up its squad panel's own diagonalBorderColor as a
-     plain rectangular border, even though it never opted into
-     showDiagonalBorders itself. RoadmapView's own .unit-card instance sets
-     diagonalBorderColor directly, which still wins here - an inline style
-     always beats this stylesheet default for that same element. */
-  --card-edge-color: transparent;
 }
 
 .unit-card .badge {
@@ -614,11 +606,6 @@
   width: 128px;
   padding: 8px 0;
   text-align: center;
-  /* Card's border color is a CSS custom property that inherits down the DOM
-     - without this reset, every character card silently picks up the
-     inventory-panel's own diagonalBorderColor (cyan) as a plain rectangular
-     border, even though it never opted into showDiagonalBorders itself. */
-  --card-edge-color: transparent;
 }
 
 .character-card-portrait-wrap {
@@ -1814,11 +1801,10 @@
 
 .squad-special-badge {
   position: absolute;
-  /* -6px was calibrated against the unit card's old 1px border, which gave
-     the eye a reference edge to overlap. Now that --card-edge-color is
-     reset to transparent on .unit-card (no visible border), that same
-     offset reads as floating disconnected from the card - pulled in to -3px
-     so the badge still overlaps the corner instead of hovering past it. */
+  /* -6px was calibrated against the unit card's old 1px border. The squad
+     pool card is a raw chamfered div with no border, so that offset reads as
+     floating disconnected - pulled in to -3px so the badge still overlaps
+     the corner instead of hovering past it. */
   top: -3px;
   left: -3px;
   width: 16px;

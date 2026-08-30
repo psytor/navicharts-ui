@@ -20,7 +20,7 @@ export function InventoryView({ units }: { units: UnitWithRoster[] }) {
   const characters = units.filter((u) => u.unit_type === 'character').sort(byGpThenName);
 
   return (
-    <Card chamfered chamferSize="lg" showDiagonalBorders diagonalBorderColor="var(--cyan)" className="inventory-panel">
+    <Card chamfered chamferSize="lg" showDiagonalBorders edgeColor="var(--cyan)" className="inventory-panel">
       <h2 className="inventory-header">Inventory</h2>
       <div className="inventory-grid">
         {characters.map((u) => (

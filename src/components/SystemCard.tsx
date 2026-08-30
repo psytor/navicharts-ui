@@ -67,7 +67,7 @@ export function SystemCard({ system, onChange, canModify }: { system: System; on
       chamferSize="sm"
       padding="md"
       showDiagonalBorders={system.status}
-      diagonalBorderColor={system.status ? 'var(--color-success)' : undefined}
+      edgeColor={system.status ? 'var(--color-success)' : 'transparent'}
       className={`sector-card ${system.status ? 'sector-complete' : ''}`}
     >
       <div className="requirements-list">
