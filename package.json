@@ -16,7 +16,7 @@
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
     "@xyflow/react": "^12.11.2",
-    "astrogators-shared-ui": "^0.13.0",
+    "astrogators-shared-ui": "^0.13.1",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },
