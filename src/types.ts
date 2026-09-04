@@ -189,6 +189,10 @@ export interface Squad {
 export interface SyncResult {
   units_synced: number;
   ally_code: string;
+  /** Timestamp of the underlying Comlink pull this sync reflects. */
+  cached_at?: string | null;
+  /** Seconds until the shared per-ally Comlink floor allows another real pull. */
+  next_refresh_in_seconds?: number | null;
 }
 
 // ---- input/mutation payloads ----

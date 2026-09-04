@@ -64,15 +64,6 @@
   margin: 0;
 }
 
-.sync-controls {
-  display: flex;
-  gap: 8px;
-}
-
-.sync-controls input {
-  font-family: var(--font-mono);
-}
-
 .sync-message {
   font-size: 13px;
   color: var(--color-text-secondary);

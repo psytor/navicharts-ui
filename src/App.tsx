@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { NavBar, Container, Footer, Card, Button, Input, useAuth } from 'astrogators-shared-ui';
+import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { NavBar, Container, Footer, Card, Button, Input, RosterRefresh, useAuth } from 'astrogators-shared-ui';
 import { api, getShareUrl } from './api';
 import { Quadrant } from './components/Quadrant';
 import { QuadrantBuilder } from './components/QuadrantBuilder';
@@ -38,6 +38,10 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  // Cache timing for the shared RosterRefresh control, fed from syncRoster's
+  // response (astrogators-table's per-ally Comlink floor).
+  const [rosterCachedAt, setRosterCachedAt] = useState<string | null>(null);
+  const [rosterRefreshAvailableAt, setRosterRefreshAvailableAt] = useState<number | null>(null);
   const [view, setView] = useState<ViewName>('roadmap');
   const [selectedQuadrantId, setSelectedQuadrantId] = useState<number | null>(null);
   const [editingQuadrantId, setEditingQuadrantId] = useState<number | null>(null);
@@ -192,7 +196,10 @@ function App() {
     setSyncMessage(null);
     try {
       const result = await api.syncRoster(selectedAllyCode);
-      setSyncMessage(`Synced ${result.units_synced} units for ally code ${result.ally_code}`);
+      // The "Updated X ago" readout conveys success now — no toast needed.
+      setRosterCachedAt(result.cached_at ?? new Date().toISOString());
+      const next = result.next_refresh_in_seconds ?? 0;
+      setRosterRefreshAvailableAt(next > 0 ? Date.now() + next * 1000 : null);
       await loadStarChart();
     } catch (e) {
       setSyncMessage(`Sync failed: ${(e as Error).message}`);
@@ -280,20 +287,48 @@ function App() {
     }
   }
 
-  const rightExtras = (
-    <div className="sync-controls">
-      <Button variant="outline" size="sm" onClick={goToLibrary} disabled={appMode === 'library'}>
-        My Star Charts
-      </Button>
-      <Button variant="outline" size="sm" onClick={handleSync} disabled={syncing}>
-        {syncing ? 'Syncing...' : 'Sync Roster'}
-      </Button>
-    </div>
-  );
+  // "My Star Charts" is section nav, so it lives in the NavBar tab strip (like
+  // mod-ledger's tabs) rather than as a button crammed next to the ally code.
+  // navicharts routes by app mode, not URL, so the tab soft-navigates via
+  // goToLibrary and marks itself active while the library is showing.
+  const navItems = [
+    {
+      label: 'My Star Charts',
+      href: '/navicharts/',
+      active: appMode === 'library',
+      render: ({ className, children }: { className: string; children: ReactNode }) => (
+        <a
+          href="/navicharts/"
+          className={className}
+          onClick={(e) => {
+            e.preventDefault();
+            goToLibrary();
+          }}
+        >
+          {children}
+        </a>
+      ),
+    },
+  ];
+
+  const rightExtras = selectedAllyCode ? (
+    <RosterRefresh
+      onRefresh={handleSync}
+      isRefreshing={syncing}
+      cachedAt={rosterCachedAt}
+      refreshAvailableAt={rosterRefreshAvailableAt}
+    />
+  ) : null;
 
   return (
     <>
-      <NavBar appName="Navicharts" appHref="/navicharts/" showAllyCode rightExtras={rightExtras} />
+      <NavBar
+        appName="Navicharts"
+        appHref="/navicharts/"
+        navItems={navItems}
+        showAllyCode
+        rightExtras={rightExtras}
+      />
       <Container maxWidth={appMode === 'chart' && (view === 'visualise' || view === 'inventory') ? 'full' : 'lg'} className="app">
         {appMode === 'library' ? (
           <StarChartLibrary
