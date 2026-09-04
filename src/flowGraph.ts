@@ -72,20 +72,20 @@ interface RawEdge {
   target: string;
   sourceSectorId: number;
   targetSectorId: number;
-  sourceQuadrantId: number;
-  targetQuadrantId: number;
   crossSector: boolean;
-  crossQuadrant: boolean;
 }
 
 // Walks starChart.quadrants[].sectors[] and produces the raw (unpositioned)
 // graph shape: one node per System ("systemNode"), one node per Waypoint
 // ("waypointNode"), grouped by Sector within Quadrant. Edges come from two
 // places: system.unlocks (a System unlocking a Waypoint) and
-// system.prerequisites (a System that must be built before this one) -
-// either can cross Sector and/or Quadrant boundaries. Waypoints are always
-// edge targets, never sources: nothing in the data model ever originates an
-// edge from a Waypoint node.
+// system.prerequisites (a System that must be built before this one) - an
+// edge can cross Sector boundaries but NEVER a Quadrant boundary: Quadrants
+// are independent farming plans, chained only by the Roadmap view, so a
+// link whose endpoints land in different Quadrants is dropped here. (The
+// backend rejects saving one; this guards against any left in older data.)
+// Waypoints are always edge targets, never sources: nothing in the data
+// model ever originates an edge from a Waypoint node.
 export function deriveGraph(starChart: StarChart) {
   const systemLocation = new Map<number, { sector: Sector; quadrant: Quadrant }>();
   const waypointLocation = new Map<number, { sector: Sector; quadrant: Quadrant }>();
@@ -105,30 +105,26 @@ export function deriveGraph(starChart: StarChart) {
       sector.systems.forEach((system) => {
         system.unlocks.forEach((waypoint) => {
           const target = waypointLocation.get(waypoint.id);
+          if (target && target.quadrant.id !== quadrant.id) return; // cross-Quadrant: not a real link
           unlockEdges.push({
             id: `u-${system.id}-${waypoint.id}`,
             source: `system-${system.id}`,
             target: `waypoint-${waypoint.id}`,
             sourceSectorId: sector.id,
             targetSectorId: target?.sector.id ?? sector.id,
-            sourceQuadrantId: quadrant.id,
-            targetQuadrantId: target?.quadrant.id ?? quadrant.id,
             crossSector: !!target && target.sector.id !== sector.id,
-            crossQuadrant: !!target && target.quadrant.id !== quadrant.id,
           });
         });
         system.prerequisites.forEach((prereq) => {
           const source = systemLocation.get(prereq.id);
+          if (source && source.quadrant.id !== quadrant.id) return; // cross-Quadrant: not a real link
           prerequisiteEdges.push({
             id: `p-${prereq.id}-${system.id}`,
             source: `system-${prereq.id}`,
             target: `system-${system.id}`,
             sourceSectorId: source?.sector.id ?? sector.id,
             targetSectorId: sector.id,
-            sourceQuadrantId: source?.quadrant.id ?? quadrant.id,
-            targetQuadrantId: quadrant.id,
             crossSector: !!source && source.sector.id !== sector.id,
-            crossQuadrant: !!source && source.quadrant.id !== quadrant.id,
           });
         });
       });
@@ -392,7 +388,6 @@ function layoutSectorPositions(sectorClusters: ReturnType<typeof layoutSectorClu
   });
 
   crossSectorEdges.forEach((e) => {
-    if (e.crossQuadrant) return;
     const a = String(e.sourceSectorId);
     const b = String(e.targetSectorId);
     if (a !== b && meta.hasNode(a) && meta.hasNode(b)) meta.setEdge(a, b);
@@ -451,7 +446,6 @@ function layoutSectorPositionsRadial(
     });
   });
   crossSectorEdges.forEach((e) => {
-    if (e.crossQuadrant) return;
     const a = e.sourceSectorId;
     const b = e.targetSectorId;
     if (a === b || !spokeIds.has(a) || !spokeIds.has(b)) return;
@@ -557,17 +551,19 @@ function layoutSectorPositionsRadial(
 // layout path needs any special-casing beyond this one branch.
 function layoutQuadrantCluster(quadrant: Quadrant, allEdges: RawEdge[]) {
   const sectorClusters = quadrant.sectors.map(layoutSectorCluster);
-  const crossSectorEdges = allEdges.filter((e) => !e.crossQuadrant);
+  // No edge crosses a Quadrant boundary (see deriveGraph), so every edge is
+  // a candidate for this Quadrant's internal Sector layout - the helpers
+  // below ignore any whose endpoints aren't Sectors of this cluster.
   const goal = detectGoalSector(quadrant);
 
   const sectorPositions = goal
     ? layoutSectorPositionsRadial(
         sectorClusters.find((c) => c.sector.id === goal.sectorId)!,
         sectorClusters.filter((c) => c.sector.id !== goal.sectorId),
-        crossSectorEdges,
+        allEdges,
         goal.waypointId
       )
-    : layoutSectorPositions(sectorClusters, crossSectorEdges);
+    : layoutSectorPositions(sectorClusters, allEdges);
 
   let maxX = 0;
   let maxY = 0;
@@ -733,7 +729,7 @@ function buildRoutedFlowEdge(e: RawEdge, absoluteRects: Map<string, Rect>, nodeC
   const targetRect = absoluteRects.get(e.target);
   const color = nodeColorById.get(e.target) ?? nodeColorById.get(e.source) ?? '#666';
   const baseStyle = { stroke: color, strokeWidth: 2 };
-  const crossesBoundary = e.crossQuadrant || e.crossSector;
+  const crossesBoundary = e.crossSector;
 
   if (!sourceRect || !targetRect) {
     // shouldn't happen (every system/waypoint has a resolved rect), but
@@ -810,43 +806,18 @@ export function recomputeEdgePaths(liveNodes: Node[], edges: Edge[], absoluteRec
   });
 }
 
-// Arranges quadrant clusters using dagre again, this time treating each
-// whole quadrant as a single meta-node sized to its cluster's bounding box,
-// with one meta-edge per pair of quadrants that has a real cross-quadrant
-// edge between them. Without this, a naive grid pack (row-major by
-// order_index) places quadrants with no regard for which ones actually
-// connect, so a cross-quadrant line from column 0 to column 2 has no choice
-// but to cut straight through column 1's box - exactly the "lines passing
-// under each other" problem. Laying out the meta-graph with LR (quadrants
-// connect left-to-right) while each quadrant's own internal content stays
-// TB (top-to-bottom) means connected quadrants land adjacent to each other,
-// so most cross-quadrant edges only have to bridge a short gap between
-// neighbouring boxes instead of crossing unrelated ones.
-function layoutQuadrantPositions(clusters: ReturnType<typeof layoutQuadrantCluster>[], allEdges: RawEdge[]): Map<number, { x: number; y: number }> {
-  const meta = new dagre.graphlib.Graph();
-  meta.setGraph({ rankdir: 'LR', ranksep: CLUSTER_GUTTER, nodesep: CLUSTER_GUTTER });
-  meta.setDefaultEdgeLabel(() => ({}));
-
-  clusters.forEach((cluster) => {
-    meta.setNode(String(cluster.quadrant.id), {
-      width: cluster.width + CLUSTER_PADDING * 2,
-      height: cluster.height + CLUSTER_PADDING * 2 + QUADRANT_LABEL_SPACE,
-    });
-  });
-
-  allEdges.forEach((e) => {
-    if (!e.crossQuadrant) return;
-    const a = String(e.sourceQuadrantId);
-    const b = String(e.targetQuadrantId);
-    if (a !== b && meta.hasNode(a) && meta.hasNode(b)) meta.setEdge(a, b);
-  });
-
-  dagre.layout(meta);
-
+// Lays the quadrant clusters out left-to-right in order_index sequence -
+// the order you actually farm them. There are no edges between quadrants
+// (they're independent plans, chained only by the Roadmap), so there's
+// nothing for a graph layout to solve here: a plain row is both correct
+// and stable. `clusters` arrives already sorted by order_index (see
+// deriveGraph's `quadrants`).
+function layoutQuadrantPositions(clusters: ReturnType<typeof layoutQuadrantCluster>[]): Map<number, { x: number; y: number }> {
   const positions = new Map<number, { x: number; y: number }>();
-  meta.nodes().forEach((id) => {
-    const { x, y, width, height } = meta.node(id);
-    positions.set(Number(id), { x: x - width / 2, y: y - height / 2 });
+  let x = 0;
+  clusters.forEach((cluster) => {
+    positions.set(cluster.quadrant.id, { x, y: 0 });
+    x += cluster.width + CLUSTER_PADDING * 2 + CLUSTER_GUTTER;
   });
   return positions;
 }
@@ -894,7 +865,7 @@ export function layoutGraph({ quadrants, prerequisiteEdges, unlockEdges }: Deriv
     });
   });
 
-  const quadrantPositions = layoutQuadrantPositions(clusters, allEdges);
+  const quadrantPositions = layoutQuadrantPositions(clusters);
 
   clusters.forEach((qCluster) => {
     const groupId = `quadrant-${qCluster.quadrant.id}`;

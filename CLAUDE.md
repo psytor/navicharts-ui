@@ -4,6 +4,22 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
+**Uncommitted work (update this line once committed):** Quadrants are now
+fully independent in the Plan and Visualise tabs — the only place they
+chain is the Roadmap. Three changes: (1) `RoadmapView.tsx`'s
+`buildLocations` dedupes to one card per unit per location box (a unit
+re-listed in a later Quadrant, or farmable twice under its own event, no
+longer doubles); (2) `SectorEditorPanel.tsx`'s "Feeds into" / "Unlocks"
+remote picker is scoped to the **current Quadrant's** other Sectors only
+(was every Quadrant's) and strips any stale cross-Quadrant absolute id
+from the payload on save; (3) `flowGraph.ts`'s `deriveGraph` drops any
+edge whose endpoints are in different Quadrants, and `layoutQuadrantPositions`
+is now a plain left-to-right row (no dagre meta-graph, since there are no
+inter-Quadrant edges to lay out). The `crossQuadrant` / `sourceQuadrantId`
+/ `targetQuadrantId` fields on `RawEdge` are gone. Backend counterpart
+(`navicharts`): `_assert_links_in_quadrant` 422s cross-Quadrant links,
+migration `a1c4e7f9b2d3` purges existing rows.
+
 **Docs current as of:** commit `1aedecd`. Added a `mod` role alongside `admin`
 everywhere curated-chart publish/manage happens (`canModify`'s curated
 branch, `canPublish`, the "All Shared" fetch/section gate — renamed from

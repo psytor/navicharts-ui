@@ -43,23 +43,32 @@ export function SectorEditorPanel({ starChartId, quadrantId, editingSector, next
   const allSystems = flattenSystems([sector]);
   const allWaypoints = flattenWaypoints([sector]);
 
-  // Everything outside THIS sector is reached via absolute id, grouped by
-  // Sector - one expandable group per Sector, not per Quadrant. Editing
-  // scope is a Sector now, so the local/remote picker boundary is the
-  // Sector boundary (matches the old project's Quadrant-scoped picker one
-  // level down) - grouping by Quadrant here would bundle sibling Sectors
-  // together and hide which one a target actually belongs to. A sibling
-  // in the SAME Quadrant is labeled with just its own name; a Sector in a
-  // DIFFERENT Quadrant gets the Quadrant name appended for context.
-  const otherGroups: OtherSectorGroup[] = allQuadrants.flatMap((q) =>
-    q.sectors
-      .filter((s) => s.id !== editingSector?.id)
-      .map((s) => ({
-        id: s.id,
-        label: q.id === quadrantId ? s.name : `${s.name} (${q.name})`,
-        systems: s.systems,
-        waypoints: s.waypoints,
-      }))
+  // Other Sectors in THIS Quadrant, reached via absolute id - one
+  // expandable group each, so a System can feed into / unlock a target in a
+  // sibling Sector. Scoped to the current Quadrant only: Quadrants are
+  // independent farming plans and never link across the boundary (the
+  // Roadmap is the one place they chain, by walking them in order). Earlier
+  // this listed every Quadrant's Sectors, which let cross-Quadrant links be
+  // created by accident.
+  const currentQuadrant = allQuadrants.find((q) => q.id === quadrantId);
+  const otherGroups: OtherSectorGroup[] = (currentQuadrant?.sectors ?? [])
+    .filter((s) => s.id !== editingSector?.id)
+    .map((s) => ({
+      id: s.id,
+      label: s.name,
+      systems: s.systems,
+      waypoints: s.waypoints,
+    }));
+
+  // Absolute-id links are only kept if their target still lives in this
+  // Quadrant - clears any stale cross-Quadrant link left in the data from
+  // before the picker was scoped down, so opening + saving any Sector heals
+  // it. The backend rejects cross-Quadrant links too (422).
+  const quadrantSystemIds = new Set(
+    (currentQuadrant?.sectors ?? []).flatMap((s) => s.systems.map((sy) => sy.id))
+  );
+  const quadrantWaypointIds = new Set(
+    (currentQuadrant?.sectors ?? []).flatMap((s) => s.waypoints.map((w) => w.id))
   );
 
   async function submit() {
@@ -95,11 +104,11 @@ export function SectorEditorPanel({ starChartId, quadrantId, editingSector, next
           unlock_waypoint_indices: s.unlock_keys
             .map((key) => allWaypoints.findIndex((w) => w.waypoint._key === key))
             .filter((idx) => idx !== -1),
-          unlock_waypoint_ids: s.unlock_waypoint_ids,
+          unlock_waypoint_ids: s.unlock_waypoint_ids.filter((id) => quadrantWaypointIds.has(id)),
           downstream_indices: s.downstream_keys
             .map((key) => allSystems.findIndex((sy) => sy.system._key === key))
             .filter((idx) => idx !== -1),
-          downstream_system_ids: s.downstream_system_ids,
+          downstream_system_ids: s.downstream_system_ids.filter((id) => quadrantSystemIds.has(id)),
         })),
         waypoints: sector.waypoints
           .filter((w) => w.name.trim())
