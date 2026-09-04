@@ -179,6 +179,21 @@ function buildLocations(starChart: StarChart) {
     group.entries.sort((a, b) =>
       a.quadrantIndex - b.quadrantIndex || a.sectorOrder - b.sectorOrder || a.systemOrder - b.systemOrder
     );
+    // Collapse to one card per unit within this box. The same unit is often a
+    // requirement in more than one place across the plan - listed again in a
+    // later Quadrant to check it's ready to move on, or farmable twice under
+    // its own event/Journey - but "what do I farm next" has one answer per
+    // unit. Runs after the sort, so the entry kept is the earliest in
+    // priority order. Per-box only: a unit that's a real source in two
+    // different boxes (e.g. Normal Energy AND a Shipment) still shows once in
+    // each. Gearing Order (buildGearOrder) is deliberately NOT deduped - a
+    // unit at G12 in one Quadrant and R7 later is two genuine tasks.
+    const seenUnits = new Set<string>();
+    group.entries = group.entries.filter((e) => {
+      if (seenUnits.has(e.req.unit.id)) return false;
+      seenUnits.add(e.req.unit.id);
+      return true;
+    });
   }
 
   const keys = [...groups.keys()];
