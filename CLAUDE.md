@@ -125,7 +125,7 @@ that package's own `CLAUDE.md`.
 
 Same as every other frontend in this workspace: served through the
 workspace nginx at one origin (`http://localhost/` dev,
-`https://astrotable.dynv6.net/` prod). Every `VITE_*_URL` must go through
+`https://astrotable.org/` prod). Every `VITE_*_URL` must go through
 that proxy — never a direct backend port — or auth state (localStorage,
 scoped per origin) breaks across apps.
 
