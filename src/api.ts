@@ -101,7 +101,6 @@ export const api = {
   getUnitCatalog: (): Promise<Unit[]> => request('/units/catalog'),
   getUnits: (allyCode: string): Promise<UnitWithRoster[]> =>
     request(`/units?ally_code=${encodeURIComponent(allyCode)}`),
-  getRequiredUnits: (): Promise<Unit[]> => request('/units/required'),
   getEvents: (family?: string): Promise<GameEvent[]> =>
     request(`/events${family ? `?family=${encodeURIComponent(family)}` : ''}`),
 

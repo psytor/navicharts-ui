@@ -1573,6 +1573,45 @@
   margin-top: 10px;
 }
 
+/* Bounds the search box + pool grid + "Other matches" grid to their own
+   internal scroll, so .squad-slots above (where drag-and-drop actually
+   drops a unit) stays on-screen even when the pool is long, instead of
+   getting pushed off the top of the viewport. Styled as a recessed panel
+   (inset shadow + tinted background, same look as .req-editor's own
+   recessed box) rather than a bare div, so the scroll boundary itself
+   reads clearly instead of blending into the rest of the form. */
+.squad-pool-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 10px 10px 4px;
+  margin-bottom: 10px;
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: inset 0 6px 6px -6px rgba(0, 0, 0, 0.4), inset 0 -6px 6px -6px rgba(0, 0, 0, 0.4);
+}
+
+.squad-pool-scroll .squad-pool-header:first-child {
+  margin-top: 0;
+}
+
+.squad-notes-textarea {
+  width: 100%;
+  min-height: 84px;
+  padding: 10px 12px;
+  background: var(--color-background-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-primary);
+  font: inherit;
+  resize: vertical;
+}
+
+.squad-notes-textarea:focus {
+  outline: none;
+  border-color: var(--cyan);
+}
+
 /* Squad builder section - sits at the end of each Quadrant card's own
    sector list (Quadrant.tsx), styled as a full-width block like
    .gearing-section rather than the narrow sidebar .squad-loadout-panel used
@@ -1731,6 +1770,11 @@
 .squad-slot-filled {
   border-style: solid;
   background: var(--color-background);
+  cursor: grab;
+}
+
+.squad-slot-filled:active {
+  cursor: grabbing;
 }
 
 .squad-slot-special {

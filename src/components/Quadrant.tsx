@@ -146,7 +146,7 @@ export function Quadrant({ quadrant, starChartId, allQuadrants, onChange, onMove
               + Add sector
             </Button>
           )}
-          <SquadBuilder quadrantId={quadrant.id} />
+          <SquadBuilder quadrant={quadrant} />
         </div>
       )}
     </Card>

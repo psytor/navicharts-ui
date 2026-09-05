@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Input, Select, useAuth } from 'astrogators-shared-ui';
 import { api } from '../api';
 import { UnitPortrait, OmicronCornerBadge } from './Badge';
-import type { Squad, SquadMember, SquadMemberIn, StarChart, Unit } from '../types';
+import type { Quadrant as QuadrantType, Squad, SquadMember, SquadMemberIn, StarChart, Unit } from '../types';
 
 const SQUAD_PURPOSES = [
   'Squad Arena', 'Fleet Arena', 'Territory War', 'Territory Battle',
@@ -47,19 +47,45 @@ function squadToSlots(squad: Squad): Slots {
   return { special: specialMember ? specialMember.unit : null, members };
 }
 
-interface UnitDragCardProps {
-  unit: Unit;
+// Identifies one slot within a squad-in-progress, so a slot's own drag
+// payload can say where it came from (as opposed to a pool/catalog drag,
+// which only ever carries a unit id) - lets dropping a filled slot onto
+// another slot swap the two instead of only ever adding from outside.
+type SlotRef = { kind: 'special' } | { kind: 'member'; index: number };
+
+function slotRefEqual(a: SlotRef, b: SlotRef): boolean {
+  if (a.kind !== b.kind) return false;
+  return a.kind === 'member' && b.kind === 'member' ? a.index === b.index : true;
 }
 
-// The draggable source card shared by both the default required-units pool
-// and the full-catalog search results below it - same look, same drag
-// payload (the unit id), just a different source array feeding it.
-function UnitDragCard({ unit }: UnitDragCardProps) {
+function getSlotUnit(slots: Slots, ref: SlotRef): Unit | null {
+  return ref.kind === 'special' ? slots.special : slots.members[ref.index];
+}
+
+function setSlotUnit(slots: Slots, ref: SlotRef, unit: Unit | null): Slots {
+  if (ref.kind === 'special') return { ...slots, special: unit };
+  const members = [...slots.members];
+  members[ref.index] = unit;
+  return { ...slots, members };
+}
+
+interface UnitDragCardProps {
+  unit: Unit;
+  onAdd?: (unit: Unit) => void;
+}
+
+// The draggable source card shared by both the Quadrant's own pool and the
+// full-catalog "Other matches" results - same look, same drag payload (the
+// unit id), just a different source array feeding it. Double-click is a
+// non-drag shortcut for the same action (fills the next empty slot) - handy
+// once the pool list is too long to see the slots and a pool card at once.
+function UnitDragCard({ unit, onAdd }: UnitDragCardProps) {
   return (
     <div
       className="unit-card squad-pool-card chamfered-box-sm"
       draggable
       onDragStart={(e) => e.dataTransfer.setData('text/plain', unit.id)}
+      onDoubleClick={() => onAdd?.(unit)}
     >
       <UnitPortrait unit={unit} />
       <span className="unit-card-name">{unit.name}</span>
@@ -71,14 +97,20 @@ interface SquadSlotProps {
   label: string;
   unit: Unit | null;
   isSpecial?: boolean;
+  onDragStart: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onClear: () => void;
 }
 
-function SquadSlot({ label, unit, isSpecial, onDrop, onClear }: SquadSlotProps) {
+// A filled slot is itself a drag source (draggable is only set once it has a
+// unit) - dragging it onto another slot moves/swaps rather than requiring
+// clear-then-redrag to fix a wrong pick.
+function SquadSlot({ label, unit, isSpecial, onDragStart, onDrop, onClear }: SquadSlotProps) {
   return (
     <div
       className={`squad-slot${isSpecial ? ' squad-slot-special' : ''}${unit ? ' squad-slot-filled' : ''}`}
+      draggable={!!unit}
+      onDragStart={unit ? onDragStart : undefined}
       onDragOver={(e) => e.preventDefault()}
       onDrop={onDrop}
     >
@@ -132,32 +164,47 @@ function SquadForm({ squad, squadType, quadrantId, pool, catalog, onSaved, onCan
   // multiple real teams (e.g. an arena squad and a TW squad).
   const assignedIds = new Set([slots.special?.id, ...slots.members.map((m) => m?.id)].filter(Boolean));
   const availablePool = typePool.filter((u) => !assignedIds.has(u.id));
-  // Only searched, not listed wholesale - the full catalog is hundreds of
-  // units, so it stays hidden until you actually type a name, rather than
-  // burying the (usually much shorter, actually-relevant) required pool.
   const trimmedSearch = search.trim().toLowerCase();
-  const searchResults = trimmedSearch
-    ? typeCatalog.filter((u) => !assignedIds.has(u.id) && u.name.toLowerCase().includes(trimmedSearch))
+  // Typing a search narrows this Quadrant's own pool in place, rather than
+  // leaving it untouched and only appending a second list.
+  const poolResults = trimmedSearch
+    ? availablePool.filter((u) => u.name.toLowerCase().includes(trimmedSearch))
+    : availablePool;
+  const poolIds = new Set(typePool.map((u) => u.id));
+  // Full-catalog matches this Quadrant's own pool doesn't already offer -
+  // how a unit required by another Quadrant, or not on any Quadrant, stays
+  // reachable. Only searched, not listed wholesale - the full catalog is
+  // hundreds of units.
+  const otherResults = trimmedSearch
+    ? typeCatalog.filter((u) => !assignedIds.has(u.id) && !poolIds.has(u.id) && u.name.toLowerCase().includes(trimmedSearch))
     : [];
 
   function unitFromDrop(e: React.DragEvent): Unit | null {
     const unitId = e.dataTransfer.getData('text/plain');
     return typePool.find((u) => u.id === unitId) || typeCatalog.find((u) => u.id === unitId) || null;
   }
-  function handleDropSpecial(e: React.DragEvent) {
-    e.preventDefault();
-    const unit = unitFromDrop(e);
-    if (unit) setSlots((s) => ({ ...s, special: unit }));
+  function handleSlotDragStart(source: SlotRef, e: React.DragEvent) {
+    e.dataTransfer.setData('application/x-squad-slot', JSON.stringify(source));
   }
-  function handleDropMember(index: number, e: React.DragEvent) {
+  // Dropping a pool/catalog card fills the slot as before. Dropping another
+  // slot (identified by the "application/x-squad-slot" payload set in
+  // handleSlotDragStart) swaps the two slots' units instead - a wrong leader
+  // pick becomes a drag onto a member slot, not clear-then-redrag.
+  function handleSlotDrop(target: SlotRef, e: React.DragEvent) {
     e.preventDefault();
-    const unit = unitFromDrop(e);
-    if (unit)
+    const sourceRaw = e.dataTransfer.getData('application/x-squad-slot');
+    if (sourceRaw) {
+      const source: SlotRef = JSON.parse(sourceRaw);
+      if (slotRefEqual(source, target)) return;
       setSlots((s) => {
-        const members = [...s.members];
-        members[index] = unit;
-        return { ...s, members };
+        const sourceUnit = getSlotUnit(s, source);
+        const targetUnit = getSlotUnit(s, target);
+        return setSlotUnit(setSlotUnit(s, target, sourceUnit), source, targetUnit);
       });
+      return;
+    }
+    const unit = unitFromDrop(e);
+    if (unit) setSlots((s) => setSlotUnit(s, target, unit));
   }
   function clearSpecial() {
     setSlots((s) => ({ ...s, special: null }));
@@ -166,6 +213,19 @@ function SquadForm({ squad, squadType, quadrantId, pool, catalog, onSaved, onCan
     setSlots((s) => {
       const members = [...s.members];
       members[index] = null;
+      return { ...s, members };
+    });
+  }
+  // Double-click shortcut for drag-and-drop: fills the special/leader slot
+  // first if it's empty, otherwise the first empty member slot in order.
+  // No-ops once every slot is already filled.
+  function addToNextSlot(unit: Unit) {
+    setSlots((s) => {
+      if (!s.special) return { ...s, special: unit };
+      const idx = s.members.findIndex((m) => m === null);
+      if (idx === -1) return s;
+      const members = [...s.members];
+      members[idx] = unit;
       return { ...s, members };
     });
   }
@@ -219,7 +279,8 @@ function SquadForm({ squad, squadType, quadrantId, pool, catalog, onSaved, onCan
           label={cfg.specialLabel}
           unit={slots.special}
           isSpecial
-          onDrop={handleDropSpecial}
+          onDragStart={(e) => handleSlotDragStart({ kind: 'special' }, e)}
+          onDrop={(e) => handleSlotDrop({ kind: 'special' }, e)}
           onClear={clearSpecial}
         />
         {slots.members.map((u, i) => (
@@ -227,40 +288,49 @@ function SquadForm({ squad, squadType, quadrantId, pool, catalog, onSaved, onCan
             key={i}
             label={`${cfg.memberLabel} ${i + 1}`}
             unit={u}
-            onDrop={(e) => handleDropMember(i, e)}
+            onDragStart={(e) => handleSlotDragStart({ kind: 'member', index: i }, e)}
+            onDrop={(e) => handleSlotDrop({ kind: 'member', index: i }, e)}
             onClear={() => clearMember(i)}
           />
         ))}
       </div>
 
-      <div className="location-header squad-pool-header">Drag from pool</div>
-      <div className="location-card-grid">
-        {availablePool.map((u) => (
-          <UnitDragCard key={u.id} unit={u} />
-        ))}
+      <div className="squad-pool-scroll">
+        <div className="location-header squad-pool-header">Search all characters</div>
+        <Input
+          type="text"
+          placeholder={`Search for any ${cfg.unitType} by name...`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+
+        <div className="location-header squad-pool-header">Drag from pool</div>
+        <div className="location-card-grid">
+          {poolResults.map((u) => (
+            <UnitDragCard key={u.id} unit={u} onAdd={addToNextSlot} />
+          ))}
+        </div>
+
+        {trimmedSearch && (
+          <>
+            <div className="location-header squad-pool-header">Other matches</div>
+            <div className="location-card-grid squad-search-results">
+              {otherResults.map((u) => (
+                <UnitDragCard key={u.id} unit={u} onAdd={addToNextSlot} />
+              ))}
+              {otherResults.length === 0 && <p className="squad-empty-hint">No other matches.</p>}
+            </div>
+          </>
+        )}
       </div>
 
-      <div className="location-header squad-pool-header">Search all characters</div>
-      <Input
-        type="text"
-        placeholder={`Search for any ${cfg.unitType} by name...`}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
-      {trimmedSearch && (
-        <div className="location-card-grid squad-search-results">
-          {searchResults.map((u) => (
-            <UnitDragCard key={u.id} unit={u} />
-          ))}
-          {searchResults.length === 0 && <p className="squad-empty-hint">No matches.</p>}
-        </div>
-      )}
-
+      <div className="location-header squad-pool-header">Notes</div>
       <textarea
+        className="squad-notes-textarea"
         placeholder="Notes (optional)"
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
-        rows={2}
+        rows={4}
       />
 
       {error && <p className="add-quadrant-error">{error}</p>}
@@ -444,19 +514,36 @@ export function SquadList({ starChart, quadrantId }: { starChart: StarChart; qua
 // Full builder living inside a Quadrant card in the Plan tab (see
 // Quadrant.tsx) - squads here are examples of what's actually buildable
 // once this Quadrant's units are unlocked, not a chart-wide roster. The
-// unit pool itself stays chart-wide (getRequiredUnits, unscoped) since a
-// squad can legitimately reuse a character unlocked in an earlier Quadrant.
-export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
+// default drag pool is scoped to this same Quadrant (derived from its own
+// requirements/rewards, no fetch needed) - it's what you're actually
+// building squads for. A character from another Quadrant, or not on any
+// Quadrant, is still reachable through the form's search box.
+export function SquadBuilder({ quadrant }: { quadrant: QuadrantType }) {
   const { isAuthenticated } = useAuth();
   const [squads, setSquads] = useState<Squad[]>([]);
-  const [pool, setPool] = useState<Unit[]>([]);
   const [catalog, setCatalog] = useState<Unit[]>([]);
   const [editingSquadId, setEditingSquadId] = useState<number | null>(null);
   const [creatingType, setCreatingType] = useState<string | null>(null); // null | "character" | "ship"
   const [error, setError] = useState<string | null>(null);
 
+  const pool = useMemo(() => {
+    const units = new Map<string, Unit>();
+    for (const sector of quadrant.sectors) {
+      for (const system of sector.systems) {
+        for (const req of system.requirements) {
+          units.set(req.unit.id, req.unit);
+        }
+      }
+      for (const waypoint of sector.waypoints) {
+        // event-only waypoints have no unit reward
+        if (waypoint.unit) units.set(waypoint.unit.id, waypoint.unit);
+      }
+    }
+    return Array.from(units.values());
+  }, [quadrant]);
+
   function loadSquads() {
-    api.getMySquads({ quadrantId }).then(setSquads).catch((e) => setError(e.message));
+    api.getMySquads({ quadrantId: quadrant.id }).then(setSquads).catch((e) => setError(e.message));
   }
 
   useEffect(() => {
@@ -465,12 +552,11 @@ export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
     // let the backend's raw 401 text surface as the "error" state.
     if (!isAuthenticated) return;
     loadSquads();
-    api.getRequiredUnits().then(setPool).catch((e) => setError(e.message));
-    // Full game catalog, separate from the required-units pool above - only
+    // Full game catalog, separate from the Quadrant-derived pool above - only
     // surfaced through the form's search box, so a squad can still include
-    // a character your farming plan doesn't itself require.
+    // a character this Quadrant doesn't itself require.
     api.getUnitCatalog().then(setCatalog).catch((e) => setError(e.message));
-  }, [isAuthenticated, quadrantId]);
+  }, [isAuthenticated, quadrant.id]);
 
   function handleSaved() {
     setEditingSquadId(null);
@@ -510,7 +596,7 @@ export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
                   <SquadForm
                     key={sq.id}
                     squad={sq}
-                    quadrantId={quadrantId}
+                    quadrantId={quadrant.id}
                     pool={pool}
                     catalog={catalog}
                     onSaved={handleSaved}
@@ -528,7 +614,7 @@ export function SquadBuilder({ quadrantId }: { quadrantId: number }) {
           </div>
 
           {creatingType === type ? (
-            <SquadForm squadType={type} quadrantId={quadrantId} pool={pool} catalog={catalog} onSaved={handleSaved} onCancel={() => setCreatingType(null)} />
+            <SquadForm squadType={type} quadrantId={quadrant.id} pool={pool} catalog={catalog} onSaved={handleSaved} onCancel={() => setCreatingType(null)} />
           ) : (
             <Button variant="outline" fullWidth className="add-quadrant-toggle" onClick={() => setCreatingType(type)}>
               + New {cfg.label}

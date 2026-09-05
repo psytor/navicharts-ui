@@ -4,9 +4,36 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Uncommitted work (update this line once committed):** Quadrants are now
-fully independent in the Plan and Visualise tabs — the only place they
-chain is the Roadmap. Three changes: (1) `RoadmapView.tsx`'s
+**Uncommitted work (update this line once committed):** Plan tab's Squad/Fleet
+Builder (`SquadBuilder.tsx`, `Quadrant.tsx`) got three related fixes,
+following the same "Quadrants are independent" direction as the
+`517609e` work below. (1) The default character/ship pool is now derived
+from the active Quadrant's own `requirements`/`waypoints` (deduped by unit
+id), not the old chart-wide/unscoped `getRequiredUnits()` call — a unit only
+needed by another Quadrant, or not on any Quadrant, no longer shows up in
+the default pool, only via search. `SquadBuilder` takes a `quadrant:
+Quadrant` prop instead of a bare `quadrantId`; `api.getRequiredUnits` /
+`GET /units/required` is now unused from the frontend. (2) "Search all
+characters" moved above "Drag from pool" and now filters that same pool
+grid in place (was: pool always shown unfiltered, search only appended an
+untouched second list below it); a second "Other matches" section still
+lists full-catalog hits the Quadrant's own pool doesn't already offer. (3)
+The pool/search area is wrapped in a new scrollable `.squad-pool-scroll`
+(bounded height, styled as a recessed panel) so the squad slots above it
+stay on-screen once the pool is long, and `UnitDragCard` gained a
+double-click handler (fills the next empty slot, special/leader first) as
+a non-drag shortcut. A filled `SquadSlot` is now itself a drag source
+(`SlotRef`/`getSlotUnit`/`setSlotUnit` in `SquadBuilder.tsx`) - dragging one
+slot onto another swaps their units (a custom `application/x-squad-slot`
+dataTransfer payload distinguishes this from a pool/catalog drag, which only
+ever carries a unit id), so fixing a wrong leader pick is a drag onto a
+member slot rather than clear-then-redrag. The Notes textarea also got its
+own header + real styling (`.squad-notes-textarea`, was a bare unstyled
+`<textarea>`).
+
+Prior session's work, commit `517609e` (`fe08403`..`517609e`): Quadrants
+became fully independent in the Plan and Visualise tabs — the only place
+they chain is the Roadmap. Three changes: (1) `RoadmapView.tsx`'s
 `buildLocations` dedupes to one card per unit per location box (a unit
 re-listed in a later Quadrant, or farmable twice under its own event, no
 longer doubles); (2) `SectorEditorPanel.tsx`'s "Feeds into" / "Unlocks"
@@ -75,13 +102,10 @@ that was deliberately chart/Quadrant-agnostic. Now `Squad` has a required
 that Quadrant. The Visualise tab's `SquadList` now groups squads by
 Quadrant when the Quadrant nav bar has none selected, and narrows to one
 Quadrant's squads when it does - mirroring the flow graph's own filtering.
-`SquadForm`'s drag pool stayed chart-wide (`getRequiredUnits`, unscoped) by
-design - it was never "every character in the game," only units your own
-charts already reference as a requirement or reward. A "Search all
-characters" box was added alongside it (queries `getUnitCatalog`, the full
-game roster, filtered client-side by name) so a squad can still include a
-unit your farming plan doesn't itself name - the default pool list is
-unchanged, search is purely additive.
+`SquadForm`'s drag pool was chart-wide at this point (`getRequiredUnits`,
+unscoped) with a "Search all characters" box (`getUnitCatalog`) added
+alongside it for anything not in that pool - since superseded by the
+Quadrant-scoped pool described at the top of this section.
 
 Prior session's work (`d7f0e2f`..`79810bf`): restructured the app around a
 `library`/`chart` split —
