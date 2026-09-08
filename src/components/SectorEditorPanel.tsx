@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from 'astrogators-shared-ui';
 import { api } from '../api';
+import { useUnsavedChangesWarning } from '../hooks/useUnsavedChangesWarning';
 import { SectorEditor } from './SectorEditor';
 import type { OtherSectorGroup } from './SystemEditor';
 import {
@@ -32,6 +33,14 @@ export function SectorEditorPanel({ starChartId, quadrantId, editingSector, next
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Warn on tab-close / reload while the draft differs from what it opened
+  // with. sector is produced once by the same deterministic factory and only
+  // mutated via setSector, so a stringify compare is stable here.
+  const [baselineSector] = useState(() =>
+    JSON.stringify(editingSector ? sectorToFormState(editingSector) : emptySector())
+  );
+  useUnsavedChangesWarning(JSON.stringify(sector) !== baselineSector && !saving);
 
   useEffect(() => {
     api.getUnitCatalog().then(setUnits).catch((e) => setError(e.message));

@@ -4,8 +4,21 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-**Uncommitted work (update this line once committed):** Plan tab's Squad/Fleet
-Builder (`SquadBuilder.tsx`, `Quadrant.tsx`) got three related fixes,
+**Uncommitted work (update this line once committed):** `SquadForm`
+(`SquadBuilder.tsx`) and `SectorEditorPanel.tsx` gained an unsaved-changes
+guard — `useUnsavedChangesWarning(dirty && !saving)` (`src/hooks/`, a
+`beforeunload` listener; there's no router to intercept in-app nav). Each
+holds a `useState`-seeded baseline signature of its editable draft (SquadForm
+reduces slot units to id+position so a pool-sourced unit vs. a squad-sourced
+one doesn't read as changed; SectorEditorPanel stringifies the whole
+factory-produced `sector`) and arms the guard when the current draft differs.
+Both editors already kept form state + showed a persistent `error` on a
+failed save, so this is the only piece that was missing. Same bump:
+`astrogators-shared-ui` `0.14.0 → 0.15.0` (authedFetch retries transient
+502/503/504; no API change).
+
+Prior: Plan tab's Squad/Fleet Builder (`SquadBuilder.tsx`, `Quadrant.tsx`)
+got three related fixes,
 following the same "Quadrants are independent" direction as the
 `517609e` work below. (1) The default character/ship pool is now derived
 from the active Quadrant's own `requirements`/`waypoints` (deduped by unit
