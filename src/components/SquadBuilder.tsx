@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button, Card, Input, Select, useAuth } from 'astrogators-shared-ui';
 import { api } from '../api';
+import { useUnsavedChangesWarning } from '../hooks/useUnsavedChangesWarning';
 import { UnitPortrait, OmicronCornerBadge } from './Badge';
 import type { Quadrant as QuadrantType, Squad, SquadMember, SquadMemberIn, StarChart, Unit } from '../types';
 
@@ -155,6 +156,24 @@ function SquadForm({ squad, squadType, quadrantId, pool, catalog, onSaved, onCan
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+
+  // Warn on tab-close / reload while this form differs from what it opened
+  // with. slotSig reduces the slot units to id + position so a unit object
+  // sourced from the pool vs. from an existing squad can't read as "changed".
+  const slotSig = (s: Slots) => ({
+    special: s.special?.id ?? null,
+    members: s.members.map((m) => m?.id ?? null),
+  });
+  const [baselineSig] = useState(() =>
+    JSON.stringify({
+      name: squad?.name || '',
+      purpose: squad?.purpose || SQUAD_PURPOSES[0],
+      notes: squad?.notes || '',
+      slots: slotSig(squad ? squadToSlots(squad) : emptySlots(type)),
+    })
+  );
+  const currentSig = JSON.stringify({ name, purpose, notes, slots: slotSig(slots) });
+  useUnsavedChangesWarning(currentSig !== baselineSig && !saving);
 
   const typePool = pool.filter((u) => u.unit_type === cfg.unitType);
   const typeCatalog = catalog.filter((u) => u.unit_type === cfg.unitType);
