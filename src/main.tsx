@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from 'astrogators-shared-ui';
 import App from './App';
 import './index.css';
@@ -10,8 +11,10 @@ const apiBaseURL = import.meta.env.VITE_ASTROGATORS_TABLE_URL || 'http://localho
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <AuthProvider apiBaseUrl={apiBaseURL}>
-      <App />
-    </AuthProvider>
+    <BrowserRouter basename="/navicharts">
+      <AuthProvider apiBaseUrl={apiBaseURL}>
+        <App />
+      </AuthProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );

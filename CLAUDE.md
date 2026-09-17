@@ -4,16 +4,18 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
-Migrated to `astrogators-shared-ui` 0.16.0's manifest-driven `NavBar`. The
-hand-built `navItems` array (the "My Star Charts" tab with its `render`
-override calling `goToLibrary()`) is gone — `NavBar` now takes
-`currentApp="navicharts"`, `activeSectionId={appMode === 'library' ?
-'library' : undefined}`, and an `onNavigate` handler that calls
-`goToLibrary()` (the section itself is defined once, suite-wide, in
-shared-ui's `SUITE_NAV`, not here). `showAllyCode` and `appName`/`appHref`
-are gone too — the ally-code dropdown is always shown now and the logo
-always targets `/`. `rightExtras={rightExtras}` (the `RosterRefresh`
-control) is unchanged.
+This app gained real routing (`react-router-dom`, matching every other
+frontend in this workspace) — it no longer has "no router." `App.tsx` is
+now just a `<Routes>` table: `/` (`pages/OverviewPage.tsx`) and `/starcharts`
+(`pages/StarChartsPage.tsx`). See "App architecture" below for the full
+shape — the section immediately after this one describing `appMode` as a
+single `App.tsx` state machine is superseded by it, kept only as history of
+what came before. `astrogators-shared-ui`'s `SUITE_NAV` (0.16.2) nests
+`mine`/`guild`/`official`/`bookmarked`/`moderation` under a "Star Charts"
+group, plus a flat "Overview" entry — `NavBar`'s `onNavigate` now does a
+real `navigate()` via `components/Layout.tsx` (mirroring mod-ledger-ui's
+`Layout.tsx` exactly — each app owns its own instance since shared-ui stays
+router-agnostic), not `goToLibrary()`/local state.
 
 **Uncommitted work (update this line once committed):** `SquadForm`
 (`SquadBuilder.tsx`) and `SectorEditorPanel.tsx` gained an unsaved-changes
@@ -166,8 +168,8 @@ React 19 + Vite 8 + TypeScript SPA — the frontend for `navicharts` (the
 SWGOH farming-roadmap planner backend). Two things live here:
 
 - **Star Chart library + viewer** — browse Curated/Mine/Guild/Bookmarked
-  charts, open one, and view/edit it across four tabs (Roadmap, Plan,
-  Visualise, Inventory).
+  charts at `/starcharts`, open one (viewed at `/`), and view/edit it
+  across four tabs (Roadmap, Plan, Visualise, Inventory).
 - **Squad Builder** — example-team widget scoped to a single Quadrant,
   rendered inside that Quadrant's own card in the Plan tab (`Quadrant.tsx`).
   A squad belongs to the Quadrant it's an example for, since it's gated by
@@ -175,10 +177,9 @@ SWGOH farming-roadmap planner backend). Two things live here:
   `SquadList` shows the same squads read-only, grouped by Quadrant unless
   the Quadrant nav bar has one filtered.
 
-It has **no router** (no `react-router` dependency) — the whole app is one
-component (`App.tsx`) driven by a handful of `useState` values, not routed
-pages. See "App architecture" below before assuming a router-based mental
-model.
+It uses `react-router-dom` (`BrowserRouter basename="/navicharts"`, same
+convention as every other frontend here) with exactly two routes — see "App
+architecture" below.
 
 It consumes `astrogators-shared-ui` (npm) for `AuthProvider`/`useAuth`,
 `NavBar`, and the design-system components (`Card`, `Badge`, `Select`,
@@ -197,8 +198,10 @@ scoped per origin) breaks across apps.
 
 - Node 24, React 19.2, Vite 8, TypeScript 6
 - `@xyflow/react` + `@dagrejs/dagre` — the Visualise tab's flow diagram
-- No router, no state-management library — plain `useState`/`useCallback`
-  in `App.tsx`, prop-drilled down
+- `react-router-dom` v7 (declarative `<Routes>`/`<Route>`, not the data-router
+  APIs — same convention as mod-ledger-ui/astrogators-hub/nightwatcher-ui);
+  no other state-management library — plain `useState`/`useCallback` per
+  page, not prop-drilled through a single root component anymore
 
 ## Common commands
 
@@ -217,24 +220,63 @@ navicharts-ui`) and refuses to double-start or steal a claimed port.
 
 ## App architecture
 
-`App.tsx` holds two independent state machines:
+Two routes, each a real page component, each owning its own state — nothing
+is prop-drilled between them, since React Router unmounts one when you
+navigate to the other:
 
-- **`appMode: 'library' | 'chart'`** — which top-level screen is showing.
-  Initialized once from the URL (`chartIdFromUrl()` — a `?chart=<id>` query
-  param means `'chart'`, its absence means `'library'`) and only changed by
-  `openChart(id)` (library → chart) or `goToLibrary()` (chart → library,
-  strips `?chart=` via `history.replaceState`). Nothing auto-picks a
-  default chart to show — an empty library is a normal empty state, not a
-  blocking app-level error.
-- **`view: 'roadmap' | 'plan' | 'visualise' | 'inventory'`** — which tab is
-  active *inside* chart mode. Irrelevant while `appMode === 'library'`.
+- **`/` → `pages/OverviewPage.tsx`** — shows whichever star chart is
+  currently selected, same `?chart=<id>` query-param convention this app
+  used before routes existed (still read via `useSearchParams`, still
+  synced with `navigate(..., {replace: true})` instead of a push, since
+  switching charts isn't meant to build back/forward history). A
+  `ChartSelector` (`components/ChartSelector.tsx`, modeled on
+  mod-ledger-ui's `EvaluationSelector` — pick from a dropdown, click a
+  button, mirrors "My Star Charts" only for now) sits above it. With no
+  `?chart=` at all, Overview falls back to the last chart you opened,
+  persisted via `utils/lastChartStorage.ts` — the **only** localStorage
+  usage in this app, and deliberately narrower than the "resume last
+  chart" behavior a past session removed (see the history below): that
+  was the app's *only* entry point, auto-opening a chart with no way to
+  land on a neutral screen; this only seeds Overview's own default,
+  falling back to an empty "pick one" state if there's no last chart or
+  it's no longer reachable. Also owns `view: 'roadmap' | 'plan' |
+  'visualise' | 'inventory'` (which tab is active inside the open chart)
+  and every other chart-viewing/editing state (rename, bookmark, copy,
+  roster sync, Quadrant filter/edit).
+- **`/starcharts` → `pages/StarChartsPage.tsx`** — the library. All five
+  sections (Mine/Guild/Official/Bookmarked/Moderation-admin-mod-only)
+  render stacked on this one page — `<section id="...">` anchors, not
+  separate views — same as the pre-routing app's single library screen.
+  Owns the five list-fetching state slots (`myCharts`/`curatedCharts`/
+  `guildCharts`/`bookmarkedCharts`/`allSharedCharts`).
 
-**The URL is the single source of truth for which chart is open.**
-`activeStarChartId` changes are mirrored into `?chart=<id>` via
-`replaceState` (not `pushState` — switching charts isn't meant to build
-back/forward history), so a page reload naturally lands back on the same
-chart. There is deliberately no `localStorage`-based "resume last chart"
-fallback — a bare visit to `/navicharts/` always lands on the library.
+**`components/Layout.tsx`** (mirrors mod-ledger-ui's `Layout.tsx`) renders
+`NavBar`/`Container`/`Footer` — each page wraps itself with it, passing its
+own `rightExtras` (only Overview passes `RosterRefresh`; the library page
+passes none — roster-derived data isn't shown there). `activeSectionId` is
+derived from `location.pathname`/`location.hash` here, same reasoning as
+mod-ledger-ui's `Layout.tsx`: NavBar doesn't compute "where am I" itself
+since every app detects it differently.
+
+**`components/ChartSelector.tsx`, not `App.tsx`, is the only place
+`?chart=` gets set from user action now** — `StarChartsPage`'s "Open"
+button and post-create/post-copy flows `navigate()` to `/?chart=<id>`
+directly instead.
+
+> **History:** before this, the whole app was one component (`App.tsx`)
+> with an `appMode: 'library' | 'chart'` state machine and no router at
+> all — `openChart(id)`/`goToLibrary()` flipped `appMode` and hand-wrote
+> `history.replaceState` calls instead of navigating. `chartIdFromUrl()`
+> read `?chart=` the same way it still does. This was one of the two things
+> the current task's whole redesign fixed: this app was the only frontend
+> here without real routing, and Overview vs. Star Charts needed to be two
+> real, separately-linkable pages the way mod-ledger-ui's Grid vs.
+> Evaluations already were. Before *that*, a still-earlier session had
+> removed a `localStorage.activeStarChartId` "resume last chart" fallback
+> in favor of the URL as sole source of truth — `lastChartStorage.ts`
+> reintroduces a narrower version of that idea for Overview's default only,
+> per an explicit decision to prioritize consistent cross-app behavior over
+> preserving that removal.
 
 **`StarChartLibrary.tsx`** (`Curated`/`Mine`/`Guild`/`Bookmarked` sections,
 each a grid of `ChartCard`s) is the only place chart creation happens

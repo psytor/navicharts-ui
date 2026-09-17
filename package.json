@@ -16,9 +16,10 @@
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
     "@xyflow/react": "^12.11.2",
-    "astrogators-shared-ui": "^0.16.1",
+    "astrogators-shared-ui": "file:../../../../../tmp/claude-1000/-home-psytor-projects-astro-table/ea8fa90a-ca83-463a-8bf2-7a3acc95efb3/scratchpad/astrogators-shared-ui-0.16.2.tgz",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5"
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
