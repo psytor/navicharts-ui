@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, type ReactNode } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { NavBar, Container, Footer, Card, Button, Input, RosterRefresh, useAuth } from 'astrogators-shared-ui';
 import { api, getShareUrl } from './api';
 import { Quadrant } from './components/Quadrant';
@@ -287,30 +287,6 @@ function App() {
     }
   }
 
-  // "My Star Charts" is section nav, so it lives in the NavBar tab strip (like
-  // mod-ledger's tabs) rather than as a button crammed next to the ally code.
-  // navicharts routes by app mode, not URL, so the tab soft-navigates via
-  // goToLibrary and marks itself active while the library is showing.
-  const navItems = [
-    {
-      label: 'My Star Charts',
-      href: '/navicharts/',
-      active: appMode === 'library',
-      render: ({ className, children }: { className: string; children: ReactNode }) => (
-        <a
-          href="/navicharts/"
-          className={className}
-          onClick={(e) => {
-            e.preventDefault();
-            goToLibrary();
-          }}
-        >
-          {children}
-        </a>
-      ),
-    },
-  ];
-
   const rightExtras = selectedAllyCode ? (
     <RosterRefresh
       onRefresh={handleSync}
@@ -323,10 +299,14 @@ function App() {
   return (
     <>
       <NavBar
-        appName="Navicharts"
-        appHref="/navicharts/"
-        navItems={navItems}
-        showAllyCode
+        currentApp="navicharts"
+        activeSectionId={appMode === 'library' ? 'library' : undefined}
+        onNavigate={(_section, event) => {
+          // navicharts has no router — this is the only way "My Star Charts"
+          // soft-navigates instead of a full page load.
+          event.preventDefault();
+          goToLibrary();
+        }}
         rightExtras={rightExtras}
       />
       <Container maxWidth={appMode === 'chart' && (view === 'visualise' || view === 'inventory') ? 'full' : 'lg'} className="app">

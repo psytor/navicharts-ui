@@ -4,6 +4,17 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
+Migrated to `astrogators-shared-ui` 0.16.0's manifest-driven `NavBar`. The
+hand-built `navItems` array (the "My Star Charts" tab with its `render`
+override calling `goToLibrary()`) is gone — `NavBar` now takes
+`currentApp="navicharts"`, `activeSectionId={appMode === 'library' ?
+'library' : undefined}`, and an `onNavigate` handler that calls
+`goToLibrary()` (the section itself is defined once, suite-wide, in
+shared-ui's `SUITE_NAV`, not here). `showAllyCode` and `appName`/`appHref`
+are gone too — the ally-code dropdown is always shown now and the logo
+always targets `/`. `rightExtras={rightExtras}` (the `RosterRefresh`
+control) is unchanged.
+
 **Uncommitted work (update this line once committed):** `SquadForm`
 (`SquadBuilder.tsx`) and `SectorEditorPanel.tsx` gained an unsaved-changes
 guard — `useUnsavedChangesWarning(dirty && !saving)` (`src/hooks/`, a
