@@ -14,7 +14,7 @@ const VISIBILITY_LABEL: Record<ChartVisibility, string> = {
   private: 'Private',
   guild: 'Guild',
   shared: 'Shared',
-  curated: 'Curated',
+  curated: 'Official',
 };
 
 interface NewStarChartFormProps {
@@ -213,7 +213,7 @@ function ChartCard({ chart, isLoggedIn, isOwner, isAdmin, isMod, isBookmarked, o
 
         {canPublish && (
           <Button variant="outline" size="sm" onClick={handlePublish} disabled={busy}>
-            Publish to Curated
+            Publish to Official
           </Button>
         )}
 
@@ -259,11 +259,11 @@ interface SectionCommonProps {
 }
 
 function Section({
-  title, charts, userId, bookmarkedIds, usernames, ...rest
-}: { title: string; charts: StarChartListItem[] } & SectionCommonProps) {
+  id, title, charts, userId, bookmarkedIds, usernames, ...rest
+}: { id: string; title: string; charts: StarChartListItem[] } & SectionCommonProps) {
   if (charts.length === 0) return null;
   return (
-    <section className="library-section">
+    <section id={id} className="library-section">
       <h2>{title}</h2>
       <div className="library-grid">
         {charts.map((chart) => (
@@ -330,11 +330,11 @@ export function StarChartLibrary({
         </div>
       )}
       {noCharts && <p className="library-empty">No star charts to show yet.</p>}
-      <Section title="Curated" charts={curatedCharts} {...sectionProps} />
-      <Section title="Mine" charts={myCharts} {...sectionProps} />
-      <Section title="Guild" charts={guildCharts} {...sectionProps} />
-      <Section title="Bookmarked" charts={bookmarkedCharts} {...sectionProps} />
-      {canCurate && <Section title="All Shared" charts={allSharedCharts} {...sectionProps} />}
+      <Section id="mine" title="Mine" charts={myCharts} {...sectionProps} />
+      <Section id="official" title="Official" charts={curatedCharts} {...sectionProps} />
+      <Section id="guild" title="Guild" charts={guildCharts} {...sectionProps} />
+      <Section id="bookmarked" title="Bookmarked" charts={bookmarkedCharts} {...sectionProps} />
+      {canCurate && <Section id="moderation" title="All Shared" charts={allSharedCharts} {...sectionProps} />}
     </div>
   );
 }

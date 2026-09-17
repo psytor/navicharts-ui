@@ -33,6 +33,12 @@ function App() {
   const [allSharedCharts, setAllSharedCharts] = useState<StarChartListItem[]>([]);
   const [appMode, setAppMode] = useState<AppMode>(() => (chartIdFromUrl() != null ? 'chart' : 'library'));
   const [activeStarChartId, setActiveStarChartId] = useState<number | null>(() => chartIdFromUrl());
+  // Set by onNavigate when a NavBar library section (mine/curated/guild/
+  // bookmarked/moderation) is clicked from outside the library — scrolled
+  // to once the library is showing, then cleared. Library sections all
+  // render on one page now, so this is the only thing distinguishing "just
+  // show the library" from "show the library, at this section."
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const [starChart, setStarChart] = useState<StarChart | null>(null);
   const [units, setUnits] = useState<UnitWithRoster[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -128,16 +134,35 @@ function App() {
   // guarantees re-opening the SAME chart later still changes activeStarChartId
   // from null -> id, so the effect above reliably re-syncs the URL every time
   // - it wouldn't fire on a same-id no-op re-set otherwise.
-  function goToLibrary() {
+  //
+  // hash is which library section to land on (mine/official/guild/
+  // bookmarked/moderation, matching the <section id> in StarChartLibrary) -
+  // null/omitted means Mine, the bare-URL default. Written into the same
+  // URL mutation as the ?chart= clear, so the address bar always reflects
+  // where you actually are, not just an internal scroll trigger.
+  function goToLibrary(hash: string | null = null) {
     setAppMode('library');
     setActiveStarChartId(null);
     setStarChart(null);
     setError(null);
     const url = new URL(window.location.href);
     url.searchParams.delete('chart');
+    url.hash = hash ?? '';
     window.history.replaceState(null, '', url);
     loadStarCharts();
+    if (hash) setScrollTarget(hash);
   }
+
+  // All library sections render on one page (StarChartLibrary), stacked -
+  // NavBar's library entries (mine/curated/guild/bookmarked/moderation) are
+  // anchors into it, not separate views. Scroll once the library is actually
+  // showing (goToLibrary's setAppMode above doesn't take effect until the
+  // next render), then clear the target so it doesn't re-fire.
+  useEffect(() => {
+    if (appMode !== 'library' || !scrollTarget) return;
+    document.getElementById(scrollTarget)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setScrollTarget(null);
+  }, [appMode, scrollTarget]);
 
   // Refreshes the four library lists after any create/delete/visibility/
   // publish/bookmark action. When the chart just deleted was the currently
@@ -300,12 +325,14 @@ function App() {
     <>
       <NavBar
         currentApp="navicharts"
-        activeSectionId={appMode === 'library' ? 'library' : undefined}
-        onNavigate={(_section, event) => {
-          // navicharts has no router — this is the only way "My Star Charts"
-          // soft-navigates instead of a full page load.
+        activeSectionId={appMode === 'library' ? 'mine' : undefined}
+        onNavigate={(section, event) => {
+          // navicharts has no router — this is the only way any library
+          // section soft-navigates instead of a full page load. Every
+          // library section lives on the one page now; the hash after '#'
+          // (if any) is what scrolls to the right one once it's showing.
           event.preventDefault();
-          goToLibrary();
+          goToLibrary(section.href.split('#')[1] ?? null);
         }}
         rightExtras={rightExtras}
       />
@@ -328,7 +355,7 @@ function App() {
         ) : error ? (
           <div className="app-error">
             <p>{error}</p>
-            <Button variant="outline" size="sm" onClick={goToLibrary}>Back to My Star Charts</Button>
+            <Button variant="outline" size="sm" onClick={() => goToLibrary()}>Back to My Star Charts</Button>
           </div>
         ) : !starChart ? (
           <div className="app-loading">Loading...</div>
