@@ -1,23 +1,35 @@
 import { useState } from 'react';
-import { Button, Select, type SelectOption } from 'astrogators-shared-ui';
+import { Button, Select } from 'astrogators-shared-ui';
 import { Link } from 'react-router-dom';
 import type { StarChartListItem } from '../types';
 
 export interface ChartSelectorProps {
-  charts: StarChartListItem[];
+  myCharts: StarChartListItem[];
+  guildCharts: StarChartListItem[];
+  curatedCharts: StarChartListItem[];
+  bookmarkedCharts: StarChartListItem[];
   isLoading: boolean;
   onView: (chartId: number) => void;
 }
 
 /**
- * Overview's "pick a star chart, then load it" control — same two-step
- * shape as mod-ledger-ui's EvaluationSelector (pick from a dropdown, click
- * a button to act on the pick), not a live-navigate-on-select dropdown.
- * Only lists "My Star Charts" for now, unlike EvaluationSelector's two
- * optgroups (Mine/Protocols) — Overview could grow Guild/Official/
- * Bookmarked groups the same way later if that turns out to be wanted.
+ * Overview's "pick a star chart, then load it" control — same shape as
+ * mod-ledger-ui's EvaluationSelector: one Select with an <optgroup> per
+ * source (My/Guild/Official/Bookmarked Star Charts, matching NavBar's Star
+ * Charts group items exactly), a "View" button (Evaluate's equivalent —
+ * picking only sets the selection, this is what actually loads it), and a
+ * "Manage" link to the library. Moderation/All Shared isn't offered here,
+ * same reasoning EvaluationSelector has no Moderation optgroup: this is a
+ * quick "jump into a chart" picker, not a management view.
  */
-export function ChartSelector({ charts, isLoading, onView }: ChartSelectorProps) {
+export function ChartSelector({
+  myCharts,
+  guildCharts,
+  curatedCharts,
+  bookmarkedCharts,
+  isLoading,
+  onView,
+}: ChartSelectorProps) {
   const [selectedId, setSelectedId] = useState('');
 
   if (isLoading) {
@@ -28,10 +40,13 @@ export function ChartSelector({ charts, isLoading, onView }: ChartSelectorProps)
     );
   }
 
-  if (charts.length === 0) {
+  const hasAny =
+    myCharts.length > 0 || guildCharts.length > 0 || curatedCharts.length > 0 || bookmarkedCharts.length > 0;
+
+  if (!hasAny) {
     return (
       <div className="chart-selector">
-        <span>You don&apos;t have any star charts yet.</span>
+        <span>No star charts to show yet.</span>
         <Link to="/starcharts">
           <Button variant="primary" size="sm">Create one</Button>
         </Link>
@@ -39,17 +54,40 @@ export function ChartSelector({ charts, isLoading, onView }: ChartSelectorProps)
     );
   }
 
-  const options: SelectOption[] = charts.map((c) => ({ value: String(c.id), label: c.name }));
-
   return (
     <div className="chart-selector">
       <span>Star Chart:</span>
-      <Select
-        options={options}
-        value={selectedId}
-        onChange={(e) => setSelectedId(e.target.value)}
-        placeholder="Choose a star chart…"
-      />
+      <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+        <option value="">— None —</option>
+        {myCharts.length > 0 && (
+          <optgroup label="My Star Charts">
+            {myCharts.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </optgroup>
+        )}
+        {guildCharts.length > 0 && (
+          <optgroup label="Guild Star Charts">
+            {guildCharts.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </optgroup>
+        )}
+        {curatedCharts.length > 0 && (
+          <optgroup label="Official Star Charts">
+            {curatedCharts.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </optgroup>
+        )}
+        {bookmarkedCharts.length > 0 && (
+          <optgroup label="Bookmarked Star Charts">
+            {bookmarkedCharts.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </optgroup>
+        )}
+      </Select>
       <Button
         variant="primary"
         size="sm"

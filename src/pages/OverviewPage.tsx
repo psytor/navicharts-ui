@@ -36,6 +36,8 @@ export default function OverviewPage() {
   })();
 
   const [myCharts, setMyCharts] = useState<StarChartListItem[]>([]);
+  const [guildCharts, setGuildCharts] = useState<StarChartListItem[]>([]);
+  const [curatedCharts, setCuratedCharts] = useState<StarChartListItem[]>([]);
   const [isLoadingMyCharts, setIsLoadingMyCharts] = useState(true);
   const [bookmarkedCharts, setBookmarkedCharts] = useState<StarChartListItem[]>([]);
   const [activeStarChartId, setActiveStarChartId] = useState<number | null>(
@@ -92,25 +94,26 @@ export default function OverviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeStarChartId, loadStarChartDetail]);
 
-  // ChartSelector's own source list, and (with bookmarkedCharts below) what
-  // isBookmarked/canBookmark below need — this page only fetches these two
-  // lists itself rather than all five StarChartsPage owns, since that's all
-  // Overview actually needs.
+  // ChartSelector's four source lists, and (bookmarkedCharts specifically)
+  // what isBookmarked/canBookmark below need — everything StarChartsPage
+  // owns except the admin/mod-only All Shared list, which doesn't belong
+  // in a quick "jump into a chart" picker any more than EvaluationSelector
+  // offers a Moderation optgroup.
   useEffect(() => {
-    if (!user) {
-      setIsLoadingMyCharts(false);
-      return;
-    }
     setIsLoadingMyCharts(true);
     Promise.all([
-      api.getMyStarCharts().catch(() => []),
-      api.getBookmarkedStarCharts().catch(() => []),
-    ]).then(([mine, bookmarked]) => {
+      user ? api.getMyStarCharts().catch(() => []) : Promise.resolve([]),
+      selectedAllyCode ? api.getGuildStarCharts(selectedAllyCode).catch(() => []) : Promise.resolve([]),
+      api.getCuratedStarCharts().catch(() => []),
+      user ? api.getBookmarkedStarCharts().catch(() => []) : Promise.resolve([]),
+    ]).then(([mine, guild, curated, bookmarked]) => {
       setMyCharts(mine);
+      setGuildCharts(guild);
+      setCuratedCharts(curated);
       setBookmarkedCharts(bookmarked);
       setIsLoadingMyCharts(false);
     });
-  }, [user]);
+  }, [user, selectedAllyCode]);
 
   function handleChartSelected(chartId: number) {
     setEditingQuadrantId(null);
@@ -264,7 +267,14 @@ export default function OverviewPage() {
 
   return (
     <Layout rightExtras={rightExtras} containerMaxWidth={activeStarChartId != null ? containerMaxWidth : 'lg'}>
-      <ChartSelector charts={myCharts} isLoading={isLoadingMyCharts} onView={handleChartSelected} />
+      <ChartSelector
+        myCharts={myCharts}
+        guildCharts={guildCharts}
+        curatedCharts={curatedCharts}
+        bookmarkedCharts={bookmarkedCharts}
+        isLoading={isLoadingMyCharts}
+        onView={handleChartSelected}
+      />
 
       {activeStarChartId == null ? (
         <div className="app-loading">Pick a star chart above to get started.</div>
