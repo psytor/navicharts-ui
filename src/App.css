@@ -16,6 +16,15 @@
   flex-direction: column;
   align-items: center;
   gap: 32px;
+  /* mod-ledger-ui's EvaluationsPage gets its gutter from two stacked
+     layers: Layout's outer Container (full-width, padding: 2rem 0 inline)
+     plus EvaluationsPage's own inner Container(maxWidth="lg") plus
+     .page's own `padding: 48px 24px 64px`. This app's Layout only has one
+     Container(maxWidth="lg") (16px side padding, no top/bottom) plus
+     .app's 24px/80px top/bottom - this rule makes up the exact remainder
+     (computed from both apps' real rendered padding, not eyeballed) so
+     the final totals match: 80px top, 96px bottom, 40px each side. */
+  padding: 56px 24px 16px;
 }
 
 /* Same background treatment mod-ledger-ui applies to every page (its own
