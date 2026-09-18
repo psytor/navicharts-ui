@@ -15,7 +15,11 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  /* 48px, matching mod-ledger-ui's .page `gap: var(--spacing-2xl)` exactly
+     - this is the space between the hero and the first section (and,
+     since Star Charts nests its sections one level deeper, .library-section
+     below restates the same 48px for section-to-section spacing). */
+  gap: 48px;
   /* mod-ledger-ui's EvaluationsPage gets its gutter from two stacked
      layers: Layout's outer Container (full-width, padding: 2rem 0 inline)
      plus EvaluationsPage's own inner Container(maxWidth="lg") plus
@@ -172,7 +176,13 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--color-text-primary);
-  margin: 0 0 12px;
+  /* No bottom margin - divider-to-content spacing now comes from
+     .library-section's own flex `gap: 24px`, matching mod-ledger-ui's
+     .divider (margin: 0) + .section (gap: var(--spacing-lg)) exactly.
+     margin-top mirrors mod-ledger-ui's >=641px .divider override
+     (margin-top: var(--spacing-lg)), applied unconditionally since this
+     app doesn't replicate that separate mobile-vs-desktop divider sizing. */
+  margin: 24px 0 0;
 }
 
 .starcharts-divider::before,
@@ -347,6 +357,12 @@
      wide instead of stretching the full 1024px like mod-ledger-ui's
      Evaluations sections do. */
   width: 100%;
+  /* mod-ledger-ui's sections are direct siblings under .page, so its 48px
+     page-level gap alone spaces every section from the next. Here the
+     sections are nested one level deeper (inside this wrapper instead of
+     directly under .starcharts-page/.overview-page), so that same 48px
+     needs restating here to give section-to-section spacing that matches. */
+  gap: 48px;
 }
 
 .library-new-chart-form {
@@ -364,7 +380,16 @@
 .library-section {
   width: 100%;
   max-width: 1024px;
-  margin-bottom: 28px;
+  /* display:flex + align-items:center, matching mod-ledger-ui's .section
+     exactly - without this, .starcharts-empty's max-width:560px (narrower
+     than this 1024px section) just sits flush-left as a plain block, with
+     nothing to center it. The old margin-bottom here was also a different
+     spacing mechanism than mod-ledger-ui's page-level flex `gap` between
+     sections - replaced by .star-chart-library's own gap below. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
 }
 
 .library-grid {
