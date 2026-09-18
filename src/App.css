@@ -416,23 +416,13 @@
   max-width: 1024px;
 }
 
-/* ChartCard - a plain open-link tile, mirroring mod-ledger-ui's
-   EvaluationCard/.cardLink/.card/.cardEyebrow/.cardName/.cardDesc/
-   .cardMeta/.cardFooter/.cardOpen exactly. No action buttons live here
-   any more - visibility/copy-link/bookmark/publish/delete all moved to
+/* ChartCard - a plain informational tile, mirroring mod-ledger-ui's
+   EvaluationCard/.card/.cardEyebrow/.cardName/.cardDesc/.cardMeta/
+   .cardFooter/.cardView/.cardUse. No whole-card link and no management
+   actions here - visibility/copy-link/bookmark/publish/delete all live on
    the chart's own header (OverviewPage.tsx's app-header), same place
-   Evaluations keeps that off its grid card. */
-.library-chart-card-link {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  outline: none;
-}
-
-.library-chart-card-link:focus-visible .library-chart-card {
-  box-shadow: 0 0 0 2px var(--color-primary), 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-}
-
+   Evaluations keeps that off its grid card. The footer holds the two real
+   actions instead: View (Plan tab) and Use (Roadmap tab). */
 .library-chart-card.library-chart-card {
   position: relative;
   background: var(--color-surface);
@@ -441,6 +431,8 @@
   flex-direction: column;
   gap: 8px;
   min-height: 180px;
+  /* Not a link any more - View/Use are two separate real actions in the
+     footer. No whole-card hover lift, just the accent bar brightening. */
 }
 
 .library-chart-card-accent {
@@ -455,7 +447,7 @@
   transition: opacity 200ms ease-in-out;
 }
 
-.library-chart-card-link:hover .library-chart-card-accent {
+.library-chart-card.library-chart-card:hover .library-chart-card-accent {
   opacity: 1;
   box-shadow: 0 0 14px rgba(26, 115, 232, 0.7);
 }
@@ -516,15 +508,30 @@
   color: var(--color-text-disabled);
 }
 
-.library-chart-card-open {
+/* View (Plan tab, read-only for anyone who can't edit) and Use (Roadmap
+   tab, the interactive default) - navicharts-ui's own two footer actions,
+   mirroring mod-ledger-ui's .cardView/.cardUse. */
+.library-chart-card-view {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  transition: color 200ms ease-in-out;
+}
+
+.library-chart-card-view:hover {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.library-chart-card-use {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   color: var(--color-primary);
+  text-decoration: none;
   transition: transform 200ms ease-in-out, color 200ms ease-in-out;
 }
 
-.library-chart-card-link:hover .library-chart-card-open {
+.library-chart-card-use:hover {
   transform: translateX(4px);
 }
 

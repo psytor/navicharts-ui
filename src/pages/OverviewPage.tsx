@@ -35,6 +35,18 @@ export default function OverviewPage() {
     return Number.isFinite(parsed) ? parsed : null;
   })();
 
+  // "View" (StarChartLibrary.tsx's ChartCard) links here with ?view=plan
+  // instead of building a separate read-only detail page - the Plan tab
+  // already renders Quadrants/Sectors/Waypoints with every edit affordance
+  // gated behind canModify, so it's already a read-only summary for anyone
+  // who can't edit. "Use" omits the param and lands on the interactive
+  // default (Roadmap) as before. A one-time seed, same as chartIdFromUrl -
+  // the view-tabs below own `view` after that.
+  const viewFromUrl = (() => {
+    const raw = searchParams.get('view');
+    return raw === 'plan' || raw === 'visualise' || raw === 'inventory' ? raw : null;
+  })();
+
   const [myCharts, setMyCharts] = useState<StarChartListItem[]>([]);
   const [guildCharts, setGuildCharts] = useState<StarChartListItem[]>([]);
   const [curatedCharts, setCuratedCharts] = useState<StarChartListItem[]>([]);
@@ -50,7 +62,7 @@ export default function OverviewPage() {
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [rosterCachedAt, setRosterCachedAt] = useState<string | null>(null);
   const [rosterRefreshAvailableAt, setRosterRefreshAvailableAt] = useState<number | null>(null);
-  const [view, setView] = useState<ViewName>('roadmap');
+  const [view, setView] = useState<ViewName>(() => viewFromUrl ?? 'roadmap');
   const [selectedQuadrantId, setSelectedQuadrantId] = useState<number | null>(null);
   const [editingQuadrantId, setEditingQuadrantId] = useState<number | null>(null);
   const [bookmarkBusy, setBookmarkBusy] = useState(false);

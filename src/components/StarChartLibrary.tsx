@@ -68,36 +68,39 @@ interface ChartCardProps {
   ownerUsername: string | undefined;
 }
 
-// Mirrors mod-ledger-ui's EvaluationCard exactly: a plain open-link tile
-// (eyebrow / name / desc / meta / footer with a right-aligned "Open ->"),
-// nothing else. Visibility changes, copy-link, bookmark, publish, and
-// delete used to live here as a row of buttons - they now live on the
-// chart's own header (OverviewPage.tsx's app-header), same as Evaluations
-// keeps all of that off its grid card and on the evaluation's own detail
-// page. This card has no auth/ownership-dependent branches at all because
-// it has no actions left to gate.
+// Mirrors mod-ledger-ui's EvaluationCard exactly: a plain informational
+// tile (eyebrow / name / desc / meta), no whole-card link - two real
+// actions live in the footer instead. Visibility changes, copy-link,
+// bookmark, publish, and delete live on the chart's own header
+// (OverviewPage.tsx's app-header), same as Evaluations keeps all of that
+// off its grid card and on the evaluation's own detail page.
 function ChartCard({ chart, ownerUsername }: ChartCardProps) {
   return (
-    <Link to={`/?chart=${chart.id}`} className="library-chart-card-link">
-      <Card
-        chamfered
-        hoverable
-        padding="none"
-        showDiagonalBorders
-        edgeColor="var(--color-border)"
-        className="library-chart-card"
-      >
-        <span className="library-chart-card-accent" aria-hidden="true" />
-        <p className="library-chart-card-eyebrow">{VISIBILITY_LABEL[chart.visibility]}</p>
-        <h2 className="library-chart-card-name">{chart.name}</h2>
-        {chart.source && <p className="library-chart-card-desc">{chart.source}</p>}
-        {ownerUsername && <p className="library-chart-card-meta">by {ownerUsername}</p>}
-        <div className="library-chart-card-footer">
-          <span>Star Chart</span>
-          <span className="library-chart-card-open">Open &rarr;</span>
-        </div>
-      </Card>
-    </Link>
+    <Card
+      chamfered
+      padding="none"
+      showDiagonalBorders
+      edgeColor="var(--color-border)"
+      className="library-chart-card"
+    >
+      <span className="library-chart-card-accent" aria-hidden="true" />
+      <p className="library-chart-card-eyebrow">{VISIBILITY_LABEL[chart.visibility]}</p>
+      <h2 className="library-chart-card-name">{chart.name}</h2>
+      {chart.source && <p className="library-chart-card-desc">{chart.source}</p>}
+      {ownerUsername && <p className="library-chart-card-meta">by {ownerUsername}</p>}
+      <div className="library-chart-card-footer">
+        {/* Plan tab already renders Quadrants/Sectors/Waypoints read-only
+            for anyone who can't edit (every edit affordance there is
+            canModify-gated) - View just lands there instead of building a
+            separate read-only page. */}
+        <Link to={`/?chart=${chart.id}&view=plan`} className="library-chart-card-view">
+          View
+        </Link>
+        <Link to={`/?chart=${chart.id}`} className="library-chart-card-use">
+          Use &rarr;
+        </Link>
+      </div>
+    </Card>
   );
 }
 
