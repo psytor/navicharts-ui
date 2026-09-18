@@ -401,7 +401,13 @@
 }
 
 .library-chart-card-name {
-  font-weight: 600;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  line-height: 1.25;
 }
 
 .library-chart-card-source {

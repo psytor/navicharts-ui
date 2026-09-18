@@ -14,7 +14,13 @@
   --cantina: #d9713c;
 
   color-scheme: dark;
-  font: 15px/1.5 var(--font-primary, system-ui), "Segoe UI", Roboto, sans-serif;
+  /* 16px, not 15px - matches the browser default mod-ledger-ui and
+     astrogators-hub both already rely on (neither sets a root font-size at
+     all). astrogators-shared-ui's own components size themselves in rem
+     off this value, so the old 15px silently shrank the shared NavBar
+     (and anything else rem-based) by ~6% in this app only - e.g. the
+     NavBar logo rendered at 18.75px here vs 20px in the other two apps. */
+  font: 16px/1.5 var(--font-primary, system-ui), "Segoe UI", Roboto, sans-serif;
   color: var(--color-text-primary);
   background: var(--color-background);
   -webkit-font-smoothing: antialiased;
