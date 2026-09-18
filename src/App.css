@@ -328,8 +328,14 @@
 
 .app-header-actions {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.app-header-actions select {
+  max-width: 110px;
 }
 
 .app-error, .app-loading {
@@ -410,8 +416,31 @@
   max-width: 1024px;
 }
 
-.library-chart-card {
+/* ChartCard - a plain open-link tile, mirroring mod-ledger-ui's
+   EvaluationCard/.cardLink/.card/.cardEyebrow/.cardName/.cardDesc/
+   .cardMeta/.cardFooter/.cardOpen exactly. No action buttons live here
+   any more - visibility/copy-link/bookmark/publish/delete all moved to
+   the chart's own header (OverviewPage.tsx's app-header), same place
+   Evaluations keeps that off its grid card. */
+.library-chart-card-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  outline: none;
+}
+
+.library-chart-card-link:focus-visible .library-chart-card {
+  box-shadow: 0 0 0 2px var(--color-primary), 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+.library-chart-card.library-chart-card {
   position: relative;
+  background: var(--color-surface);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 180px;
 }
 
 .library-chart-card-accent {
@@ -423,13 +452,22 @@
   background: linear-gradient(90deg, transparent 0%, var(--color-primary) 20%, var(--color-primary) 80%, transparent 100%);
   opacity: 0.85;
   box-shadow: 0 0 8px rgba(26, 115, 232, 0.45);
+  transition: opacity 200ms ease-in-out;
 }
 
-.library-chart-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+.library-chart-card-link:hover .library-chart-card-accent {
+  opacity: 1;
+  box-shadow: 0 0 14px rgba(26, 115, 232, 0.7);
+}
+
+.library-chart-card-eyebrow {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
+  margin: 0;
 }
 
 .library-chart-card-name {
@@ -439,35 +477,60 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--color-text-primary);
+  margin: 0;
   line-height: 1.25;
 }
 
-.library-chart-card-source {
+.library-chart-card-desc {
   color: var(--color-text-secondary);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.library-chart-card-owner {
-  color: var(--color-text-secondary);
-  font-size: 12px;
-  margin: 4px 0 0;
+.library-chart-card-meta {
+  font-family: var(--font-heading);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
+  margin: 0;
 }
 
-.library-chart-card-actions {
+.library-chart-card-footer {
+  margin-top: auto;
+  padding-top: 16px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
   align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
 }
 
-.library-chart-card-actions select {
-  max-width: 110px;
+.library-chart-card-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-primary);
+  transition: transform 200ms ease-in-out, color 200ms ease-in-out;
 }
 
-.library-chart-delete-btn {
+.library-chart-card-link:hover .library-chart-card-open {
+  transform: translateX(4px);
+}
+
+/* Delete lives in the chart's own header now (OverviewPage.tsx) - same
+   arm-then-confirm pattern the library card used to use for this. */
+.chart-delete-btn {
   background: none;
   border: 1px solid var(--color-error);
   border-radius: 4px;
@@ -477,16 +540,10 @@
   font-size: 13px;
 }
 
-.library-chart-delete-btn.confirming {
+.chart-delete-btn.confirming {
   background: var(--color-error);
   color: var(--color-background);
   font-weight: 600;
-}
-
-.library-chart-card-error {
-  color: var(--color-error);
-  font-size: 12px;
-  margin: 8px 0 0;
 }
 
 .view-tabs {

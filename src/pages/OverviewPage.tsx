@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button, Card, Input, RosterRefresh, useAuth } from 'astrogators-shared-ui';
+import { Button, Card, Input, RosterRefresh, Select, useAuth } from 'astrogators-shared-ui';
 import Layout from '../components/Layout';
 import { ChartSelector } from '../components/ChartSelector';
 import { Quadrant } from '../components/Quadrant';
@@ -10,7 +10,7 @@ import { FlowView } from '../components/FlowView';
 import { InventoryView } from '../components/InventoryView';
 import { api, getShareUrl } from '../api';
 import { getLastChartId, setLastChartId } from '../utils/lastChartStorage';
-import type { StarChart, StarChartListItem, UnitWithRoster } from '../types';
+import type { ChartVisibility, StarChart, StarChartListItem, UnitWithRoster } from '../types';
 
 type ViewName = 'roadmap' | 'plan' | 'visualise' | 'inventory';
 
@@ -59,6 +59,10 @@ export default function OverviewPage() {
   const [chartNameDraft, setChartNameDraft] = useState('');
   const [renameBusy, setRenameBusy] = useState(false);
   const [copyBusy, setCopyBusy] = useState(false);
+  const [visibilityBusy, setVisibilityBusy] = useState(false);
+  const [publishBusy, setPublishBusy] = useState(false);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   const loadStarChartDetail = useCallback(async (starChartId: number) => {
     try {
@@ -98,22 +102,27 @@ export default function OverviewPage() {
   // what isBookmarked/canBookmark below need — everything StarChartsPage
   // owns except the admin/mod-only All Shared list, which doesn't belong
   // in a quick "jump into a chart" picker any more than EvaluationSelector
-  // offers a Moderation optgroup.
-  useEffect(() => {
-    setIsLoadingMyCharts(true);
-    Promise.all([
+  // offers a Moderation optgroup. A callback (not just an effect) since a
+  // visibility change/publish/delete on the open chart's own header below
+  // needs to refresh these too - a chart moving between Private/Guild/
+  // Shared/Official changes which optgroup(s) it belongs in.
+  const loadChartLists = useCallback(async () => {
+    const [mine, guild, curated, bookmarked] = await Promise.all([
       user ? api.getMyStarCharts().catch(() => []) : Promise.resolve([]),
       selectedAllyCode ? api.getGuildStarCharts(selectedAllyCode).catch(() => []) : Promise.resolve([]),
       api.getCuratedStarCharts().catch(() => []),
       user ? api.getBookmarkedStarCharts().catch(() => []) : Promise.resolve([]),
-    ]).then(([mine, guild, curated, bookmarked]) => {
-      setMyCharts(mine);
-      setGuildCharts(guild);
-      setCuratedCharts(curated);
-      setBookmarkedCharts(bookmarked);
-      setIsLoadingMyCharts(false);
-    });
+    ]);
+    setMyCharts(mine);
+    setGuildCharts(guild);
+    setCuratedCharts(curated);
+    setBookmarkedCharts(bookmarked);
   }, [user, selectedAllyCode]);
+
+  useEffect(() => {
+    setIsLoadingMyCharts(true);
+    void loadChartLists().finally(() => setIsLoadingMyCharts(false));
+  }, [loadChartLists]);
 
   function handleChartSelected(chartId: number) {
     setEditingQuadrantId(null);
@@ -191,6 +200,16 @@ export default function OverviewPage() {
   // Forking your own chart is harmless but pointless - only offer it for
   // charts you don't already own.
   const canCopyChart = !!starChart && !!user && !isOwner;
+  // Visibility select, Publish, and Delete used to live on the library
+  // card (StarChartLibrary.tsx) - moved here (the chart's own page) to
+  // match mod-ledger-ui's EvaluationCard, which carries none of this
+  // either and leaves it all to the evaluation's own detail page. Same
+  // three-tier _can_delete / canPublish rules ChartCard used to enforce.
+  const canCurate = isAdmin || isMod;
+  const canChangeVisibility = !!starChart && isOwner;
+  const canPublish = !!starChart && canCurate && (starChart.visibility === 'shared' || starChart.visibility === 'guild');
+  const canDelete =
+    !!starChart && (isOwner || isAdmin || (isMod && starChart.visibility === 'curated'));
 
   async function handleBookmarkToggle() {
     if (!starChart) return;
@@ -215,6 +234,53 @@ export default function OverviewPage() {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
     });
+  }
+
+  async function handleVisibilityChange(visibility: ChartVisibility) {
+    if (!starChart) return;
+    setVisibilityBusy(true);
+    setSyncMessage(null);
+    try {
+      await api.setStarChartVisibility(starChart.id, visibility, selectedAllyCode);
+      await Promise.all([loadStarChart(), loadChartLists()]);
+    } catch (e) {
+      setSyncMessage(`Visibility change failed: ${(e as Error).message}`);
+    } finally {
+      setVisibilityBusy(false);
+    }
+  }
+
+  async function handlePublish() {
+    if (!starChart) return;
+    setPublishBusy(true);
+    setSyncMessage(null);
+    try {
+      await api.publishStarChart(starChart.id);
+      await Promise.all([loadStarChart(), loadChartLists()]);
+    } catch (e) {
+      setSyncMessage(`Publish failed: ${(e as Error).message}`);
+    } finally {
+      setPublishBusy(false);
+    }
+  }
+
+  function handleDeleteClick() {
+    if (!starChart) return;
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      setTimeout(() => setConfirmingDelete(false), 3000);
+      return;
+    }
+    setDeleteBusy(true);
+    setSyncMessage(null);
+    api
+      .deleteStarChart(starChart.id)
+      .then(() => {
+        setActiveStarChartId(null);
+        return loadChartLists();
+      })
+      .catch((e) => setSyncMessage(`Delete failed: ${(e as Error).message}`))
+      .finally(() => setDeleteBusy(false));
   }
 
   function startRenamingChart() {
@@ -319,6 +385,18 @@ export default function OverviewPage() {
               {starChart.source && <p className="star-chart-source">{starChart.source}</p>}
             </div>
             <div className="app-header-actions">
+              {canChangeVisibility && (
+                <Select
+                  value={starChart.visibility}
+                  disabled={visibilityBusy}
+                  onChange={(e) => handleVisibilityChange(e.target.value as ChartVisibility)}
+                  options={[
+                    { value: 'private', label: 'Private' },
+                    { value: 'guild', label: 'Guild', disabled: !selectedAllyCode },
+                    { value: 'shared', label: 'Shared' },
+                  ]}
+                />
+              )}
               {canCopyLink && (
                 <Button variant="outline" size="sm" onClick={handleCopyLink}>
                   {linkCopied ? 'Copied!' : 'Copy link'}
@@ -333,6 +411,20 @@ export default function OverviewPage() {
                 <Button variant="outline" size="sm" onClick={handleBookmarkToggle} disabled={bookmarkBusy}>
                   {isBookmarked ? 'Unbookmark' : 'Bookmark'}
                 </Button>
+              )}
+              {canPublish && (
+                <Button variant="outline" size="sm" onClick={handlePublish} disabled={publishBusy}>
+                  {publishBusy ? 'Publishing...' : 'Publish to Official'}
+                </Button>
+              )}
+              {canDelete && (
+                <button
+                  className={`chart-delete-btn ${confirmingDelete ? 'confirming' : ''}`}
+                  onClick={handleDeleteClick}
+                  disabled={deleteBusy}
+                >
+                  {confirmingDelete ? 'Confirm?' : 'Delete'}
+                </button>
               )}
             </div>
           </Card>

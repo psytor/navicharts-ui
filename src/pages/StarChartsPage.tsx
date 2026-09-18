@@ -50,13 +50,6 @@ export default function StarChartsPage() {
     if (!authLoading) void loadStarCharts();
   }, [authLoading, loadStarCharts]);
 
-  // Same signature StarChartLibrary already expects (deletedActiveChart is
-  // meaningless here now — there's no "active chart" concept on this page,
-  // that lives on Overview — so this just always reloads).
-  async function handleLibraryChanged() {
-    await loadStarCharts();
-  }
-
   async function handleStarChartCreated(created: StarChartListItem) {
     setCreating(false);
     await loadStarCharts();
@@ -110,9 +103,6 @@ export default function StarChartsPage() {
           userId={user ? Number(user.id) : null}
           isAdmin={isAdmin}
           isMod={isMod}
-          selectedAllyCode={selectedAllyCode}
-          onSwitch={(id) => navigate(`/?chart=${id}`)}
-          onChanged={handleLibraryChanged}
           onCreateClick={() => setCreating(true)}
         />
       </div>
