@@ -353,21 +353,21 @@ export function StarChartLibrary({
       />
       <Section
         id="official"
-        title="Official Star Charts"
+        title="Official"
         charts={curatedCharts}
         emptyText="Nothing here yet. Star Charts picked by the site's admins show up here once they're published."
         {...sectionProps}
       />
       <Section
         id="guild"
-        title="Guild Star Charts"
+        title="Guild"
         charts={guildCharts}
         emptyText="Nothing here yet. Star Charts shared with your guild show up here."
         {...sectionProps}
       />
       <Section
         id="bookmarked"
-        title="Bookmarked Star Charts"
+        title="Bookmarked"
         charts={bookmarkedCharts}
         emptyText="Nothing here yet. Bookmark a Star Chart to keep it handy here."
         {...sectionProps}
