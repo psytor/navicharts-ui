@@ -343,19 +343,19 @@ export function StarChartLibrary({
   return (
     <div className="star-chart-library">
       <Section
+        id="official"
+        title="Official"
+        charts={curatedCharts}
+        emptyText="Nothing here yet. Star Charts picked by the site's admins show up here once they're published."
+        {...sectionProps}
+      />
+      <Section
         id="mine"
         title="My Star Charts"
         charts={myCharts}
         emptyTitle="No star charts yet"
         emptyText="Build your first Star Chart to start planning your farming roadmap. Add Systems, Sectors, and Waypoints, then track your progress run to run."
         emptyCta={userId != null ? { label: 'Create your first Star Chart', onClick: onCreateClick } : undefined}
-        {...sectionProps}
-      />
-      <Section
-        id="official"
-        title="Official"
-        charts={curatedCharts}
-        emptyText="Nothing here yet. Star Charts picked by the site's admins show up here once they're published."
         {...sectionProps}
       />
       <Section
