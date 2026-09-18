@@ -17,11 +17,21 @@ real `navigate()` via `components/Layout.tsx` (mirroring mod-ledger-ui's
 `Layout.tsx` exactly — each app owns its own instance since shared-ui stays
 router-agnostic), not `goToLibrary()`/local state.
 
-**`ChartCard` (`StarChartLibrary.tsx`) is now a plain open-link tile,
+**`ChartCard` (`StarChartLibrary.tsx`) is now a plain informational tile,
 matching mod-ledger-ui's `EvaluationCard`** — eyebrow (visibility label) /
-name / optional source line / owner meta / a footer with a static label and
-a right-aligned "Open →", the whole thing a real `<Link to="/?chart=<id>">`.
-It carries **no actions at all** any more. Visibility select, copy-link,
+name / optional source line / owner meta / a footer with two real actions,
+**View** (`/?chart=<id>&view=plan`) and **Use** (`/?chart=<id>`, no
+`view` param). It is not wrapped in a `<Link>` any more (matches
+mod-ledger-ui's `ManifestCard`/`EvaluationCard` pattern — a plain `Card`
+with the actual actions in its footer, no whole-card hover-lift). "View"
+does not open a new page — `OverviewPage.tsx` seeds its `view` state from
+an optional `?view=` query param (`viewFromUrl`, read once the same way
+`chartIdFromUrl` is), landing on the **Plan** tab instead of building a
+separate read-only detail page: Plan already renders Quadrants/Sectors/
+Waypoints with every edit affordance gated behind `canModify`, so it's
+already a read-only summary for anyone who can't edit. "Use" omits the
+param and lands on the interactive default (Roadmap), same as before this
+split existed. It carries **no management actions at all** any more. Visibility select, copy-link,
 bookmark, publish-to-Official, and delete all moved to the chart's own
 header (`OverviewPage.tsx`'s `app-header` — copy-link and bookmark were
 already there; visibility/publish/delete are new there, same permission
