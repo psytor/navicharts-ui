@@ -401,6 +401,13 @@
      widths). */
   grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 24px;
+  /* Without an explicit width, this shrinks to fit its actual cards under
+     .library-section's flex align-items:center - fine when there's a full
+     row, but a section with only one or two cards would center that small
+     cluster instead of stretching full-width with cards left-aligned, the
+     way mod-ledger-ui's .grid (width:100%; max-width:1024px) does. */
+  width: 100%;
+  max-width: 1024px;
 }
 
 .library-chart-card {
