@@ -344,7 +344,7 @@ export function StarChartLibrary({
     <div className="star-chart-library">
       <Section
         id="mine"
-        title="Mine"
+        title="My Star Charts"
         charts={myCharts}
         emptyTitle="No star charts yet"
         emptyText="Build your first Star Chart to start planning your farming roadmap. Add Systems, Sectors, and Waypoints, then track your progress run to run."
@@ -353,21 +353,21 @@ export function StarChartLibrary({
       />
       <Section
         id="official"
-        title="Official"
+        title="Official Star Charts"
         charts={curatedCharts}
         emptyText="Nothing here yet. Star Charts picked by the site's admins show up here once they're published."
         {...sectionProps}
       />
       <Section
         id="guild"
-        title="Guild"
+        title="Guild Star Charts"
         charts={guildCharts}
         emptyText="Nothing here yet. Star Charts shared with your guild show up here."
         {...sectionProps}
       />
       <Section
         id="bookmarked"
-        title="Bookmarked"
+        title="Bookmarked Star Charts"
         charts={bookmarkedCharts}
         emptyText="Nothing here yet. Bookmark a Star Chart to keep it handy here."
         {...sectionProps}
