@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from 'astrogators-shared-ui';
+import { Card, useAuth } from 'astrogators-shared-ui';
 import Layout from '../components/Layout';
 import { StarChartLibrary } from '../components/StarChartLibrary';
 import { api } from '../api';
@@ -63,20 +63,46 @@ export default function StarChartsPage() {
 
   return (
     <Layout>
-      <StarChartLibrary
-        myCharts={myCharts}
-        curatedCharts={curatedCharts}
-        guildCharts={guildCharts}
-        bookmarkedCharts={bookmarkedCharts}
-        allSharedCharts={allSharedCharts}
-        userId={user ? Number(user.id) : null}
-        isAdmin={isAdmin}
-        isMod={isMod}
-        selectedAllyCode={selectedAllyCode}
-        onSwitch={(id) => navigate(`/?chart=${id}`)}
-        onChanged={handleLibraryChanged}
-        onCreated={handleStarChartCreated}
-      />
+      <div className="starcharts-page">
+        <Card
+          chamfered
+          chamferSize="lg"
+          variant="outline"
+          padding="none"
+          showDiagonalBorders
+          edgeColor="var(--color-primary)"
+          className="starcharts-hero"
+        >
+          <span className="starcharts-hero-accent" aria-hidden="true" />
+          <p className="starcharts-eyebrow">Navicharts // Star Charts</p>
+          <h1 className="starcharts-title">Star Charts</h1>
+          <p className="starcharts-subtitle">
+            Browse farming roadmaps — your own, your guild&apos;s, Official
+            ones picked by the site&apos;s admins, and anything you&apos;ve
+            bookmarked.
+          </p>
+          {myCharts.length > 0 && (
+            <span className="starcharts-hero-count">
+              <strong>{myCharts.length}</strong> Mine
+            </span>
+          )}
+        </Card>
+
+        <StarChartLibrary
+          myCharts={myCharts}
+          curatedCharts={curatedCharts}
+          guildCharts={guildCharts}
+          bookmarkedCharts={bookmarkedCharts}
+          allSharedCharts={allSharedCharts}
+          userId={user ? Number(user.id) : null}
+          isAdmin={isAdmin}
+          isMod={isMod}
+          selectedAllyCode={selectedAllyCode}
+          onSwitch={(id) => navigate(`/?chart=${id}`)}
+          onChanged={handleLibraryChanged}
+          onCreated={handleStarChartCreated}
+        />
+      </div>
     </Layout>
   );
 }

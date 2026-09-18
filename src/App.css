@@ -3,6 +3,186 @@
   padding-bottom: 80px;
 }
 
+/* Star Charts page — hero panel, section dividers, background, and card
+   accent/eyebrow treatment ported from mod-ledger-ui's Evaluations page
+   (EvaluationsPage.module.css) so both apps' "browse the collection" pages
+   read as the same design language. Global classes (this app has no CSS
+   modules), prefixed starcharts- to avoid colliding with anything added
+   here later, unlike mod-ledger's hashed module class names. */
+.starcharts-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+.starcharts-page::before {
+  content: '';
+  position: fixed;
+  top: 70px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: url('/ModLedger_Background_blue.png');
+  background-size: 60%;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.starcharts-page::after {
+  content: '';
+  position: fixed;
+  top: 64px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(10, 14, 39, 0.7) 0%,
+    rgba(10, 14, 39, 0.5) 50%,
+    rgba(10, 14, 39, 0.7) 100%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+.starcharts-hero.starcharts-hero {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  background: linear-gradient(180deg, rgba(30, 33, 57, 0.6) 0%, rgba(19, 23, 41, 0.85) 100%);
+  backdrop-filter: blur(8px);
+}
+
+.starcharts-hero-accent {
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 1;
+  background: linear-gradient(90deg, transparent 0%, var(--color-primary) 25%, var(--color-info) 50%, var(--color-primary) 75%, transparent 100%);
+  box-shadow: 0 0 12px rgba(26, 115, 232, 0.6);
+}
+
+.starcharts-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.starcharts-eyebrow::before,
+.starcharts-eyebrow::after {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-primary));
+}
+
+.starcharts-eyebrow::after {
+  background: linear-gradient(90deg, var(--color-primary), transparent);
+}
+
+.starcharts-title {
+  font-family: var(--font-heading);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+.starcharts-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  margin: 0;
+  max-width: 52ch;
+  line-height: 1.5;
+}
+
+.starcharts-hero-count {
+  font-family: var(--font-heading);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-disabled);
+}
+
+.starcharts-hero-count strong {
+  color: var(--color-text-primary);
+  font-weight: 700;
+}
+
+.starcharts-divider {
+  width: 100%;
+  max-width: 1024px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-heading);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  margin: 0 0 12px;
+}
+
+.starcharts-divider::before,
+.starcharts-divider::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+  box-shadow: 0 0 8px rgba(26, 115, 232, 0.35);
+}
+
+.starcharts-empty.starcharts-empty {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  background: var(--color-surface);
+}
+
+.starcharts-empty-accent {
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 1;
+  background: linear-gradient(90deg, transparent, var(--color-primary) 50%, transparent);
+  box-shadow: 0 0 12px rgba(26, 115, 232, 0.5);
+}
+
+.starcharts-empty-text {
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
 /* ChartSelector — same flex-bar shape as mod-ledger-ui's EvaluationSelector
    (label, dropdown, action button, trailing link), token-based instead of
    that component's inline styles since this app already uses plain CSS
@@ -143,23 +323,35 @@
 }
 
 .library-section {
+  width: 100%;
+  max-width: 1024px;
   margin-bottom: 28px;
-}
-
-.library-section h2 {
-  font-family: var(--font-heading);
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
-  margin: 0 0 10px;
 }
 
 .library-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
+  /* min(280px, 100%) caps the column floor at whatever's actually
+     available, same fix applied on the mod-ledger-ui side — a bare
+     minmax(280px, 1fr) overflows once the container is narrower than
+     280px (nested Container/page padding easily eats that at mobile
+     widths). */
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 24px;
+}
+
+.library-chart-card {
+  position: relative;
+}
+
+.library-chart-card-accent {
+  display: block;
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  z-index: 1;
+  background: linear-gradient(90deg, transparent 0%, var(--color-primary) 20%, var(--color-primary) 80%, transparent 100%);
+  opacity: 0.85;
+  box-shadow: 0 0 8px rgba(26, 115, 232, 0.45);
 }
 
 .library-chart-card-header {

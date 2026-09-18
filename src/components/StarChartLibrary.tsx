@@ -169,7 +169,8 @@ function ChartCard({ chart, isLoggedIn, isOwner, isAdmin, isMod, isBookmarked, o
   }
 
   return (
-    <Card padding="sm" className="library-chart-card">
+    <Card chamfered padding="sm" showDiagonalBorders edgeColor="var(--color-border)" className="library-chart-card">
+      <span className="library-chart-card-accent" aria-hidden="true" />
       <div className="library-chart-card-header">
         <span className="library-chart-card-name">{chart.name}</span>
         <Badge variant={VISIBILITY_VARIANT[chart.visibility]} size="sm">
@@ -264,7 +265,7 @@ function Section({
   if (charts.length === 0) return null;
   return (
     <section id={id} className="library-section">
-      <h2>{title}</h2>
+      <p className="starcharts-divider">{title}</p>
       <div className="library-grid">
         {charts.map((chart) => (
           <ChartCard
@@ -329,7 +330,18 @@ export function StarChartLibrary({
           )}
         </div>
       )}
-      {noCharts && <p className="library-empty">No star charts to show yet.</p>}
+      {noCharts && (
+        <Card
+          chamfered
+          padding="none"
+          showDiagonalBorders
+          edgeColor="var(--color-primary)"
+          className="starcharts-empty"
+        >
+          <span className="starcharts-empty-accent" aria-hidden="true" />
+          <p className="starcharts-empty-text">No star charts to show yet.</p>
+        </Card>
+      )}
       <Section id="mine" title="Mine" charts={myCharts} {...sectionProps} />
       <Section id="official" title="Official" charts={curatedCharts} {...sectionProps} />
       <Section id="guild" title="Guild" charts={guildCharts} {...sectionProps} />
