@@ -267,6 +267,7 @@ export default function OverviewPage() {
 
   return (
     <Layout rightExtras={rightExtras} containerMaxWidth={activeStarChartId != null ? containerMaxWidth : 'lg'}>
+      <div className="overview-page">
       <ChartSelector
         myCharts={myCharts}
         guildCharts={guildCharts}
@@ -416,6 +417,7 @@ export default function OverviewPage() {
           )}
         </>
       )}
+      </div>
     </Layout>
   );
 }

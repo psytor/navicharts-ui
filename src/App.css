@@ -9,7 +9,8 @@
    read as the same design language. Global classes (this app has no CSS
    modules), prefixed starcharts- to avoid colliding with anything added
    here later, unlike mod-ledger's hashed module class names. */
-.starcharts-page {
+.starcharts-page,
+.overview-page {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -17,14 +18,23 @@
   gap: 32px;
 }
 
-.starcharts-page::before {
+/* Same background treatment mod-ledger-ui applies to every page (its own
+   art, ModLedger_Background_blue.png) - Navicharts_Background.jpg is this
+   app's equivalent, applied to both real routes (Overview, Star Charts)
+   the same way. A prior version of this rule pointed at
+   /ModLedger_Background_blue.png, a file that only exists in
+   mod-ledger-ui's own public/ - it 404'd (silently, since a broken CSS
+   background-image just renders nothing) for every Navicharts page the
+   whole time this was "shipped". */
+.starcharts-page::before,
+.overview-page::before {
   content: '';
   position: fixed;
   top: 70px;
   right: 0;
   bottom: 0;
   left: 0;
-  background-image: url('/ModLedger_Background_blue.png');
+  background-image: url('/Navicharts_Background.jpg');
   background-size: 60%;
   background-position: center;
   background-repeat: no-repeat;
@@ -33,7 +43,8 @@
   pointer-events: none;
 }
 
-.starcharts-page::after {
+.starcharts-page::after,
+.overview-page::after {
   content: '';
   position: fixed;
   top: 64px;
