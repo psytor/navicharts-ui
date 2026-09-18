@@ -5,9 +5,11 @@ import { useEffect } from 'react';
  * prompt while `hasUnsavedChanges` is true.
  *
  * This is `beforeunload` only — it covers tab close, reload, and navigating
- * away from the origin. This app has no router (one `App.tsx`, `useState`
- * screens), so there is no in-app route change to intercept; closing or
- * reloading the tab mid-edit is the accident this guards against.
+ * away from the origin. This app uses react-router's declarative mode
+ * (`<Routes>`/`<Route>`, no data router), which has no `useBlocker` to
+ * intercept an in-app route change (e.g. clicking NavBar's Overview link
+ * mid-edit) — closing or reloading the tab mid-edit is the accident this
+ * guards against, not in-app navigation.
  */
 export function useUnsavedChangesWarning(hasUnsavedChanges: boolean): void {
   useEffect(() => {

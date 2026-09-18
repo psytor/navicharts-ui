@@ -4,6 +4,50 @@ Guide for Claude Code when working inside this submodule.
 
 ## Documentation currency (update when you edit docs)
 
+This app gained real routing (`react-router-dom`, matching every other
+frontend in this workspace) — it no longer has "no router." `App.tsx` is
+now just a `<Routes>` table: `/` (`pages/OverviewPage.tsx`) and `/starcharts`
+(`pages/StarChartsPage.tsx`). See "App architecture" below for the full
+shape — the section immediately after this one describing `appMode` as a
+single `App.tsx` state machine is superseded by it, kept only as history of
+what came before. `astrogators-shared-ui`'s `SUITE_NAV` (0.16.2) nests
+`mine`/`guild`/`official`/`bookmarked`/`moderation` under a "Star Charts"
+group, plus a flat "Overview" entry — `NavBar`'s `onNavigate` now does a
+real `navigate()` via `components/Layout.tsx` (mirroring mod-ledger-ui's
+`Layout.tsx` exactly — each app owns its own instance since shared-ui stays
+router-agnostic), not `goToLibrary()`/local state.
+
+**`ChartCard` (`StarChartLibrary.tsx`) is now a plain informational tile,
+matching mod-ledger-ui's `EvaluationCard`** — eyebrow (visibility label) /
+name / optional source line / owner meta / a footer with two real actions,
+**View** (`/?chart=<id>&view=plan`) and **Use** (`/?chart=<id>`, no
+`view` param). It is not wrapped in a `<Link>` any more (matches
+mod-ledger-ui's `ManifestCard`/`EvaluationCard` pattern — a plain `Card`
+with the actual actions in its footer, no whole-card hover-lift). "View"
+does not open a new page — `OverviewPage.tsx` seeds its `view` state from
+an optional `?view=` query param (`viewFromUrl`, read once the same way
+`chartIdFromUrl` is), landing on the **Plan** tab instead of building a
+separate read-only detail page: Plan already renders Quadrants/Sectors/
+Waypoints with every edit affordance gated behind `canModify`, so it's
+already a read-only summary for anyone who can't edit. "Use" omits the
+param and lands on the interactive default (Roadmap), same as before this
+split existed. It carries **no management actions at all** any more. Visibility select, copy-link,
+bookmark, publish-to-Official, and delete all moved to the chart's own
+header (`OverviewPage.tsx`'s `app-header` — copy-link and bookmark were
+already there; visibility/publish/delete are new there, same permission
+rules `ChartCard` used to enforce: `canDelete` is `isOwner || isAdmin ||
+(isMod && visibility === 'curated')`, `canPublish` is `(isAdmin || isMod) &&
+visibility is shared|guild`). Deleting the open chart clears
+`activeStarChartId` and calls the new `loadChartLists()` (extracted from
+what used to be an inline `useEffect`, now also called after any
+visibility/publish/delete mutation so `ChartSelector`'s optgroups and the
+library's sections stay in sync). The "Bookmark and Copy-link also live in
+the chart header" note and the "every login-gated action... must check
+isLoggedIn/userId" line under "App architecture" below both describe the
+prior, card-owns-everything shape — this replaces them; the `StarChartLibrary`
+section further down still documents accurately what's left there (creation
+UI + reading a batched `usernames` map for card meta).
+
 **Uncommitted work (update this line once committed):** `SquadForm`
 (`SquadBuilder.tsx`) and `SectorEditorPanel.tsx` gained an unsaved-changes
 guard — `useUnsavedChangesWarning(dirty && !saving)` (`src/hooks/`, a
@@ -155,8 +199,8 @@ React 19 + Vite 8 + TypeScript SPA — the frontend for `navicharts` (the
 SWGOH farming-roadmap planner backend). Two things live here:
 
 - **Star Chart library + viewer** — browse Curated/Mine/Guild/Bookmarked
-  charts, open one, and view/edit it across four tabs (Roadmap, Plan,
-  Visualise, Inventory).
+  charts at `/starcharts`, open one (viewed at `/`), and view/edit it
+  across four tabs (Roadmap, Plan, Visualise, Inventory).
 - **Squad Builder** — example-team widget scoped to a single Quadrant,
   rendered inside that Quadrant's own card in the Plan tab (`Quadrant.tsx`).
   A squad belongs to the Quadrant it's an example for, since it's gated by
@@ -164,10 +208,9 @@ SWGOH farming-roadmap planner backend). Two things live here:
   `SquadList` shows the same squads read-only, grouped by Quadrant unless
   the Quadrant nav bar has one filtered.
 
-It has **no router** (no `react-router` dependency) — the whole app is one
-component (`App.tsx`) driven by a handful of `useState` values, not routed
-pages. See "App architecture" below before assuming a router-based mental
-model.
+It uses `react-router-dom` (`BrowserRouter basename="/navicharts"`, same
+convention as every other frontend here) with exactly two routes — see "App
+architecture" below.
 
 It consumes `astrogators-shared-ui` (npm) for `AuthProvider`/`useAuth`,
 `NavBar`, and the design-system components (`Card`, `Badge`, `Select`,
@@ -186,8 +229,10 @@ scoped per origin) breaks across apps.
 
 - Node 24, React 19.2, Vite 8, TypeScript 6
 - `@xyflow/react` + `@dagrejs/dagre` — the Visualise tab's flow diagram
-- No router, no state-management library — plain `useState`/`useCallback`
-  in `App.tsx`, prop-drilled down
+- `react-router-dom` v7 (declarative `<Routes>`/`<Route>`, not the data-router
+  APIs — same convention as mod-ledger-ui/astrogators-hub/nightwatcher-ui);
+  no other state-management library — plain `useState`/`useCallback` per
+  page, not prop-drilled through a single root component anymore
 
 ## Common commands
 
@@ -206,36 +251,81 @@ navicharts-ui`) and refuses to double-start or steal a claimed port.
 
 ## App architecture
 
-`App.tsx` holds two independent state machines:
+Two routes, each a real page component, each owning its own state — nothing
+is prop-drilled between them, since React Router unmounts one when you
+navigate to the other:
 
-- **`appMode: 'library' | 'chart'`** — which top-level screen is showing.
-  Initialized once from the URL (`chartIdFromUrl()` — a `?chart=<id>` query
-  param means `'chart'`, its absence means `'library'`) and only changed by
-  `openChart(id)` (library → chart) or `goToLibrary()` (chart → library,
-  strips `?chart=` via `history.replaceState`). Nothing auto-picks a
-  default chart to show — an empty library is a normal empty state, not a
-  blocking app-level error.
-- **`view: 'roadmap' | 'plan' | 'visualise' | 'inventory'`** — which tab is
-  active *inside* chart mode. Irrelevant while `appMode === 'library'`.
+- **`/` → `pages/OverviewPage.tsx`** — shows whichever star chart is
+  currently selected, same `?chart=<id>` query-param convention this app
+  used before routes existed (still read via `useSearchParams`, still
+  synced with `navigate(..., {replace: true})` instead of a push, since
+  switching charts isn't meant to build back/forward history). A
+  `ChartSelector` (`components/ChartSelector.tsx`, modeled on
+  mod-ledger-ui's `EvaluationSelector` — pick from a dropdown, click a
+  button, mirrors "My Star Charts" only for now) sits above it. With no
+  `?chart=` at all, Overview falls back to the last chart you opened,
+  persisted via `utils/lastChartStorage.ts` — the **only** localStorage
+  usage in this app, and deliberately narrower than the "resume last
+  chart" behavior a past session removed (see the history below): that
+  was the app's *only* entry point, auto-opening a chart with no way to
+  land on a neutral screen; this only seeds Overview's own default,
+  falling back to an empty "pick one" state if there's no last chart or
+  it's no longer reachable. Also owns `view: 'roadmap' | 'plan' |
+  'visualise' | 'inventory'` (which tab is active inside the open chart)
+  and every other chart-viewing/editing state (rename, bookmark, copy,
+  roster sync, Quadrant filter/edit).
+- **`/starcharts` → `pages/StarChartsPage.tsx`** — the library. All five
+  sections (Official/Mine/Guild/Bookmarked/All-Shared-admin-mod-only, in
+  that render order — Official first) render stacked on this one page —
+  `<section id="...">` anchors, not separate views — same as the
+  pre-routing app's single library screen. Every section always renders,
+  even empty, with its own empty-state card (mirrors mod-ledger-ui's
+  MineSection/ProtocolsSection) - a section never silently disappears.
+  Owns the five list-fetching state slots (`myCharts`/`curatedCharts`/
+  `guildCharts`/`bookmarkedCharts`/`allSharedCharts`).
 
-**The URL is the single source of truth for which chart is open.**
-`activeStarChartId` changes are mirrored into `?chart=<id>` via
-`replaceState` (not `pushState` — switching charts isn't meant to build
-back/forward history), so a page reload naturally lands back on the same
-chart. There is deliberately no `localStorage`-based "resume last chart"
-fallback — a bare visit to `/navicharts/` always lands on the library.
+**`components/Layout.tsx`** (mirrors mod-ledger-ui's `Layout.tsx`) renders
+`NavBar`/`Container`/`Footer` — each page wraps itself with it, passing its
+own `rightExtras` (only Overview passes `RosterRefresh`; the library page
+passes none — roster-derived data isn't shown there). `activeSectionId` is
+derived from `location.pathname`/`location.hash` here, same reasoning as
+mod-ledger-ui's `Layout.tsx`: NavBar doesn't compute "where am I" itself
+since every app detects it differently.
 
-**`StarChartLibrary.tsx`** (`Curated`/`Mine`/`Guild`/`Bookmarked` sections,
-each a grid of `ChartCard`s) is the only place chart creation happens
-(`+ New Star Chart`) and the only screen an anonymous visitor sees
-anything from — every login-gated action (`+ New Star Chart`, Bookmark,
-visibility changes, Delete, Publish) must check `isLoggedIn`/`userId`, not
-just "am I the owner," since an anonymous visitor also isn't the owner of
-anything and would otherwise see actions that just 401.
+**`components/ChartSelector.tsx`, not `App.tsx`, is the only place
+`?chart=` gets set from user action now** — `StarChartsPage`'s "Open"
+button and post-create/post-copy flows `navigate()` to `/?chart=<id>`
+directly instead.
 
-**Bookmark and Copy-link also live in the chart header** (`App.tsx`'s
-`app-header` Card), not only on library cards — reachable the moment you
-land on a chart via a share link, without a detour through the library.
+> **History:** before this, the whole app was one component (`App.tsx`)
+> with an `appMode: 'library' | 'chart'` state machine and no router at
+> all — `openChart(id)`/`goToLibrary()` flipped `appMode` and hand-wrote
+> `history.replaceState` calls instead of navigating. `chartIdFromUrl()`
+> read `?chart=` the same way it still does. This was one of the two things
+> the current task's whole redesign fixed: this app was the only frontend
+> here without real routing, and Overview vs. Star Charts needed to be two
+> real, separately-linkable pages the way mod-ledger-ui's Grid vs.
+> Evaluations already were. Before *that*, a still-earlier session had
+> removed a `localStorage.activeStarChartId` "resume last chart" fallback
+> in favor of the URL as sole source of truth — `lastChartStorage.ts`
+> reintroduces a narrower version of that idea for Overview's default only,
+> per an explicit decision to prioritize consistent cross-app behavior over
+> preserving that removal.
+
+**`StarChartLibrary.tsx`** (`Official`/`Mine`/`Guild`/`Bookmarked`/`All
+Shared` sections, each a grid of `ChartCard`s) is the only place chart
+creation happens (`+ New Star Chart`, in `StarChartsPage.tsx`'s hero, wired
+through `onCreateClick`) and the only screen an anonymous visitor sees
+anything from. `ChartCard` itself carries no login-gated (or any) actions
+any more — see the top-of-file note on this — so there's nothing left here
+to 401-guard beyond the create flow.
+
+**Every chart-management action lives in the chart's own header**
+(`OverviewPage.tsx`'s `app-header` Card): rename, bookmark, copy-link,
+create-a-copy, visibility select, publish, and delete. None of it lives on
+the library card — reachable the moment you land on a chart via a share
+link, without a detour through the library, same as mod-ledger-ui keeps
+evaluation actions off its grid and on the evaluation's own detail page.
 
 **`canModify`** mirrors the backend's `_can_modify` exactly: `private`/
 `guild`/`shared` are owner-only, `curated` is admin-OR-mod (not owner-gated -
@@ -249,18 +339,20 @@ star_charts.py`'s `_can_modify` - there's no shared source of truth
 between the two services for this rule, just convention.
 
 **Mod role: publish/manage parity with admin, delete does NOT match.**
-`isMod` (`user?.role === 'mod'`) now sits alongside `isAdmin` everywhere
-curated-chart publish/manage happens: `canModify`'s curated branch, the
-library's `canPublish` and the "All Shared" section fetch/visibility gate.
-**`ChartCard`'s `canDelete` in `StarChartLibrary.tsx` deliberately does
-NOT become `isOwner || isAdmin || isMod`** - it mirrors the backend's
-three-tier `_can_delete` exactly: `isOwner || isAdmin || (isMod &&
-chart.visibility === 'curated')`. A mod can delete/un-publish a curated
-chart (that's what un-publishing means here) but not another user's
-private/guild/shared chart - admins keep their existing broader
-any-chart delete power alone. If you touch `canDelete` again, keep this
-three-way split in sync with the backend's `_can_delete`, same convention
-caveat as `canModify` above.
+`isMod` (`user?.role === 'mod'`) sits alongside `isAdmin` everywhere
+curated-chart publish/manage happens: `canModify`'s curated branch, and
+`OverviewPage.tsx`'s `canPublish`/the "All Shared" section fetch/visibility
+gate. **`OverviewPage.tsx`'s `canDelete` deliberately does NOT become
+`isOwner || isAdmin || isMod`** - it mirrors the backend's three-tier
+`_can_delete` exactly: `isOwner || isAdmin || (isMod && starChart.visibility
+=== 'curated')`. A mod can delete/un-publish a curated chart (that's what
+un-publishing means here) but not another user's private/guild/shared chart
+- admins keep their existing broader any-chart delete power alone. If you
+touch `canDelete` again, keep this three-way split in sync with the
+backend's `_can_delete`, same convention caveat as `canModify` above.
+(Prior to the card-simplification note at the top of this file, this logic
+lived in `StarChartLibrary.tsx`'s `ChartCard` instead - same rule, new
+location.)
 
 **`POST /{id}/copy`** (any authenticated user, any chart they can view) is
 the non-admin counterpart to Publish - forks into a new **private** chart
