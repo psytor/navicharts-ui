@@ -17,6 +17,27 @@ real `navigate()` via `components/Layout.tsx` (mirroring mod-ledger-ui's
 `Layout.tsx` exactly — each app owns its own instance since shared-ui stays
 router-agnostic), not `goToLibrary()`/local state.
 
+**`ChartCard` (`StarChartLibrary.tsx`) is now a plain open-link tile,
+matching mod-ledger-ui's `EvaluationCard`** — eyebrow (visibility label) /
+name / optional source line / owner meta / a footer with a static label and
+a right-aligned "Open →", the whole thing a real `<Link to="/?chart=<id>">`.
+It carries **no actions at all** any more. Visibility select, copy-link,
+bookmark, publish-to-Official, and delete all moved to the chart's own
+header (`OverviewPage.tsx`'s `app-header` — copy-link and bookmark were
+already there; visibility/publish/delete are new there, same permission
+rules `ChartCard` used to enforce: `canDelete` is `isOwner || isAdmin ||
+(isMod && visibility === 'curated')`, `canPublish` is `(isAdmin || isMod) &&
+visibility is shared|guild`). Deleting the open chart clears
+`activeStarChartId` and calls the new `loadChartLists()` (extracted from
+what used to be an inline `useEffect`, now also called after any
+visibility/publish/delete mutation so `ChartSelector`'s optgroups and the
+library's sections stay in sync). The "Bookmark and Copy-link also live in
+the chart header" note and the "every login-gated action... must check
+isLoggedIn/userId" line under "App architecture" below both describe the
+prior, card-owns-everything shape — this replaces them; the `StarChartLibrary`
+section further down still documents accurately what's left there (creation
+UI + reading a batched `usernames` map for card meta).
+
 **Uncommitted work (update this line once committed):** `SquadForm`
 (`SquadBuilder.tsx`) and `SectorEditorPanel.tsx` gained an unsaved-changes
 guard — `useUnsavedChangesWarning(dirty && !saving)` (`src/hooks/`, a
@@ -244,9 +265,12 @@ navigate to the other:
   and every other chart-viewing/editing state (rename, bookmark, copy,
   roster sync, Quadrant filter/edit).
 - **`/starcharts` → `pages/StarChartsPage.tsx`** — the library. All five
-  sections (Mine/Guild/Official/Bookmarked/Moderation-admin-mod-only)
-  render stacked on this one page — `<section id="...">` anchors, not
-  separate views — same as the pre-routing app's single library screen.
+  sections (Official/Mine/Guild/Bookmarked/All-Shared-admin-mod-only, in
+  that render order — Official first) render stacked on this one page —
+  `<section id="...">` anchors, not separate views — same as the
+  pre-routing app's single library screen. Every section always renders,
+  even empty, with its own empty-state card (mirrors mod-ledger-ui's
+  MineSection/ProtocolsSection) - a section never silently disappears.
   Owns the five list-fetching state slots (`myCharts`/`curatedCharts`/
   `guildCharts`/`bookmarkedCharts`/`allSharedCharts`).
 
@@ -278,17 +302,20 @@ directly instead.
 > per an explicit decision to prioritize consistent cross-app behavior over
 > preserving that removal.
 
-**`StarChartLibrary.tsx`** (`Curated`/`Mine`/`Guild`/`Bookmarked` sections,
-each a grid of `ChartCard`s) is the only place chart creation happens
-(`+ New Star Chart`) and the only screen an anonymous visitor sees
-anything from — every login-gated action (`+ New Star Chart`, Bookmark,
-visibility changes, Delete, Publish) must check `isLoggedIn`/`userId`, not
-just "am I the owner," since an anonymous visitor also isn't the owner of
-anything and would otherwise see actions that just 401.
+**`StarChartLibrary.tsx`** (`Official`/`Mine`/`Guild`/`Bookmarked`/`All
+Shared` sections, each a grid of `ChartCard`s) is the only place chart
+creation happens (`+ New Star Chart`, in `StarChartsPage.tsx`'s hero, wired
+through `onCreateClick`) and the only screen an anonymous visitor sees
+anything from. `ChartCard` itself carries no login-gated (or any) actions
+any more — see the top-of-file note on this — so there's nothing left here
+to 401-guard beyond the create flow.
 
-**Bookmark and Copy-link also live in the chart header** (`App.tsx`'s
-`app-header` Card), not only on library cards — reachable the moment you
-land on a chart via a share link, without a detour through the library.
+**Every chart-management action lives in the chart's own header**
+(`OverviewPage.tsx`'s `app-header` Card): rename, bookmark, copy-link,
+create-a-copy, visibility select, publish, and delete. None of it lives on
+the library card — reachable the moment you land on a chart via a share
+link, without a detour through the library, same as mod-ledger-ui keeps
+evaluation actions off its grid and on the evaluation's own detail page.
 
 **`canModify`** mirrors the backend's `_can_modify` exactly: `private`/
 `guild`/`shared` are owner-only, `curated` is admin-OR-mod (not owner-gated -
@@ -302,18 +329,20 @@ star_charts.py`'s `_can_modify` - there's no shared source of truth
 between the two services for this rule, just convention.
 
 **Mod role: publish/manage parity with admin, delete does NOT match.**
-`isMod` (`user?.role === 'mod'`) now sits alongside `isAdmin` everywhere
-curated-chart publish/manage happens: `canModify`'s curated branch, the
-library's `canPublish` and the "All Shared" section fetch/visibility gate.
-**`ChartCard`'s `canDelete` in `StarChartLibrary.tsx` deliberately does
-NOT become `isOwner || isAdmin || isMod`** - it mirrors the backend's
-three-tier `_can_delete` exactly: `isOwner || isAdmin || (isMod &&
-chart.visibility === 'curated')`. A mod can delete/un-publish a curated
-chart (that's what un-publishing means here) but not another user's
-private/guild/shared chart - admins keep their existing broader
-any-chart delete power alone. If you touch `canDelete` again, keep this
-three-way split in sync with the backend's `_can_delete`, same convention
-caveat as `canModify` above.
+`isMod` (`user?.role === 'mod'`) sits alongside `isAdmin` everywhere
+curated-chart publish/manage happens: `canModify`'s curated branch, and
+`OverviewPage.tsx`'s `canPublish`/the "All Shared" section fetch/visibility
+gate. **`OverviewPage.tsx`'s `canDelete` deliberately does NOT become
+`isOwner || isAdmin || isMod`** - it mirrors the backend's three-tier
+`_can_delete` exactly: `isOwner || isAdmin || (isMod && starChart.visibility
+=== 'curated')`. A mod can delete/un-publish a curated chart (that's what
+un-publishing means here) but not another user's private/guild/shared chart
+- admins keep their existing broader any-chart delete power alone. If you
+touch `canDelete` again, keep this three-way split in sync with the
+backend's `_can_delete`, same convention caveat as `canModify` above.
+(Prior to the card-simplification note at the top of this file, this logic
+lived in `StarChartLibrary.tsx`'s `ChartCard` instead - same rule, new
+location.)
 
 **`POST /{id}/copy`** (any authenticated user, any chart they can view) is
 the non-admin counterpart to Publish - forks into a new **private** chart
