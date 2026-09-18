@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, useAuth } from 'astrogators-shared-ui';
+import { Button, Card, useAuth } from 'astrogators-shared-ui';
 import Layout from '../components/Layout';
-import { StarChartLibrary } from '../components/StarChartLibrary';
+import { StarChartLibrary, NewStarChartForm } from '../components/StarChartLibrary';
 import { api } from '../api';
 import type { StarChartListItem } from '../types';
 
@@ -21,6 +21,7 @@ export default function StarChartsPage() {
   const [guildCharts, setGuildCharts] = useState<StarChartListItem[]>([]);
   const [bookmarkedCharts, setBookmarkedCharts] = useState<StarChartListItem[]>([]);
   const [allSharedCharts, setAllSharedCharts] = useState<StarChartListItem[]>([]);
+  const [creating, setCreating] = useState(false);
 
   const isAdmin = user?.role === 'admin';
   const isMod = user?.role === 'mod';
@@ -57,6 +58,7 @@ export default function StarChartsPage() {
   }
 
   async function handleStarChartCreated(created: StarChartListItem) {
+    setCreating(false);
     await loadStarCharts();
     navigate(`/?chart=${created.id}`);
   }
@@ -81,12 +83,23 @@ export default function StarChartsPage() {
             ones picked by the site&apos;s admins, and anything you&apos;ve
             bookmarked.
           </p>
-          {myCharts.length > 0 && (
-            <span className="starcharts-hero-count">
-              <strong>{myCharts.length}</strong> Mine
-            </span>
-          )}
+          <div className="starcharts-hero-action">
+            {myCharts.length > 0 && (
+              <span className="starcharts-hero-count">
+                <strong>{myCharts.length}</strong> Mine
+              </span>
+            )}
+            {user && (
+              <Button variant="primary" onClick={() => setCreating(true)}>
+                New star chart
+              </Button>
+            )}
+          </div>
         </Card>
+
+        {creating && (
+          <NewStarChartForm onCreated={handleStarChartCreated} onCancel={() => setCreating(false)} />
+        )}
 
         <StarChartLibrary
           myCharts={myCharts}
@@ -100,7 +113,7 @@ export default function StarChartsPage() {
           selectedAllyCode={selectedAllyCode}
           onSwitch={(id) => navigate(`/?chart=${id}`)}
           onChanged={handleLibraryChanged}
-          onCreated={handleStarChartCreated}
+          onCreateClick={() => setCreating(true)}
         />
       </div>
     </Layout>

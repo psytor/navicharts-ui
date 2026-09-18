@@ -117,6 +117,15 @@
   line-height: 1.5;
 }
 
+.starcharts-hero-action {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
 .starcharts-hero-count {
   font-family: var(--font-heading);
   font-size: 12px;
@@ -178,9 +187,20 @@
   box-shadow: 0 0 12px rgba(26, 115, 232, 0.5);
 }
 
+.starcharts-empty-title {
+  font-family: var(--font-heading);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
 .starcharts-empty-text {
   color: var(--color-text-secondary);
   margin: 0;
+  max-width: 44ch;
 }
 
 /* ChartSelector — same flex-bar shape as mod-ledger-ui's EvaluationSelector
@@ -298,10 +318,15 @@
 .star-chart-library {
   display: flex;
   flex-direction: column;
-}
-
-.library-toolbar {
-  margin-bottom: 20px;
+  align-items: center;
+  /* Without an explicit width, a flex column inside .starcharts-page's
+     align-items: center shrink-wraps to its content instead of filling the
+     centered column, so every section (each capped at max-width: 1024px)
+     collapses down to whatever its narrowest content happens to be - the
+     bug that made a single card look like the whole section was 280px
+     wide instead of stretching the full 1024px like mod-ledger-ui's
+     Evaluations sections do. */
+  width: 100%;
 }
 
 .library-new-chart-form {
@@ -314,12 +339,6 @@
 .library-new-chart-form-actions {
   display: flex;
   gap: 8px;
-}
-
-.library-empty {
-  padding: 40px;
-  text-align: center;
-  color: var(--color-text-secondary);
 }
 
 .library-section {

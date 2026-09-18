@@ -22,7 +22,7 @@ interface NewStarChartFormProps {
   onCancel: () => void;
 }
 
-function NewStarChartForm({ onCreated, onCancel }: NewStarChartFormProps) {
+export function NewStarChartForm({ onCreated, onCancel }: NewStarChartFormProps) {
   const [name, setName] = useState('');
   const [source, setSource] = useState('');
   const [saving, setSaving] = useState(false);
@@ -245,7 +245,7 @@ interface StarChartLibraryProps {
   selectedAllyCode: string | null;
   onSwitch: (id: number) => void;
   onChanged: (deletedActiveChart?: boolean) => void | Promise<void>;
-  onCreated: (chart: StarChartListItem) => void;
+  onCreateClick: () => void;
 }
 
 interface SectionCommonProps {
@@ -259,42 +259,68 @@ interface SectionCommonProps {
   bookmarkedIds: Set<number>;
 }
 
+interface SectionProps {
+  id: string;
+  title: string;
+  charts: StarChartListItem[];
+  emptyText: string;
+  emptyTitle?: string;
+  emptyCta?: { label: string; onClick: () => void };
+}
+
+// Mirrors mod-ledger-ui's MineSection/ProtocolsSection: every section always
+// renders, stacked, with its own empty-state card - the NavBar's Star
+// Charts entries are anchors into this one page, not a switch between
+// sections, so a section silently vanishing when empty would make the
+// anchor land on nothing.
 function Section({
-  id, title, charts, userId, bookmarkedIds, usernames, ...rest
-}: { id: string; title: string; charts: StarChartListItem[] } & SectionCommonProps) {
-  if (charts.length === 0) return null;
+  id, title, charts, emptyText, emptyTitle, emptyCta, userId, bookmarkedIds, usernames, ...rest
+}: SectionProps & SectionCommonProps) {
   return (
     <section id={id} className="library-section">
       <p className="starcharts-divider">{title}</p>
-      <div className="library-grid">
-        {charts.map((chart) => (
-          <ChartCard
-            key={chart.id}
-            chart={chart}
-            isLoggedIn={userId != null}
-            isOwner={userId != null && chart.owner_user_id === userId}
-            isBookmarked={bookmarkedIds.has(chart.id)}
-            ownerUsername={chart.owner_user_id != null ? usernames[chart.owner_user_id] : undefined}
-            {...rest}
-          />
-        ))}
-      </div>
+      {charts.length === 0 ? (
+        <Card
+          chamfered
+          padding="none"
+          showDiagonalBorders
+          edgeColor="var(--color-primary)"
+          className="starcharts-empty"
+        >
+          {emptyTitle && <span className="starcharts-empty-accent" aria-hidden="true" />}
+          {emptyTitle && <h2 className="starcharts-empty-title">{emptyTitle}</h2>}
+          <p className="starcharts-empty-text">{emptyText}</p>
+          {emptyCta && (
+            <Button variant="primary" onClick={emptyCta.onClick}>{emptyCta.label}</Button>
+          )}
+        </Card>
+      ) : (
+        <div className="library-grid">
+          {charts.map((chart) => (
+            <ChartCard
+              key={chart.id}
+              chart={chart}
+              isLoggedIn={userId != null}
+              isOwner={userId != null && chart.owner_user_id === userId}
+              isBookmarked={bookmarkedIds.has(chart.id)}
+              ownerUsername={chart.owner_user_id != null ? usernames[chart.owner_user_id] : undefined}
+              {...rest}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }
 
 export function StarChartLibrary({
   myCharts, curatedCharts, guildCharts, bookmarkedCharts, allSharedCharts,
-  userId, isAdmin, isMod, selectedAllyCode, onSwitch, onChanged, onCreated,
+  userId, isAdmin, isMod, selectedAllyCode, onSwitch, onChanged, onCreateClick,
 }: StarChartLibraryProps) {
-  const [creating, setCreating] = useState(false);
   const [usernames, setUsernames] = useState<Record<number, string>>({});
   const bookmarkedIds = new Set(bookmarkedCharts.map((c) => c.id));
   const canCurate = isAdmin || isMod;
   const sectionProps = { userId, isAdmin, isMod, usernames, selectedAllyCode, onSwitch, onChanged, bookmarkedIds };
-
-  const noCharts =
-    myCharts.length === 0 && curatedCharts.length === 0 && guildCharts.length === 0 && bookmarkedCharts.length === 0;
 
   // Batch-resolve every rendered chart's owner to a username in one call,
   // rather than one lookup per card. Most useful in "All Shared", where the
@@ -314,39 +340,47 @@ export function StarChartLibrary({
       .catch(() => setUsernames({}));
   }, [myCharts, curatedCharts, guildCharts, bookmarkedCharts, allSharedCharts]);
 
-  function handleCreated(chart: StarChartListItem) {
-    setCreating(false);
-    onCreated(chart);
-  }
-
   return (
     <div className="star-chart-library">
-      {userId != null && (
-        <div className="library-toolbar">
-          {creating ? (
-            <NewStarChartForm onCreated={handleCreated} onCancel={() => setCreating(false)} />
-          ) : (
-            <Button variant="primary" size="sm" onClick={() => setCreating(true)}>+ New Star Chart</Button>
-          )}
-        </div>
+      <Section
+        id="mine"
+        title="Mine"
+        charts={myCharts}
+        emptyTitle="No star charts yet"
+        emptyText="Build your first Star Chart to start planning your farming roadmap. Add Systems, Sectors, and Waypoints, then track your progress run to run."
+        emptyCta={userId != null ? { label: 'Create your first Star Chart', onClick: onCreateClick } : undefined}
+        {...sectionProps}
+      />
+      <Section
+        id="official"
+        title="Official"
+        charts={curatedCharts}
+        emptyText="Nothing here yet. Star Charts picked by the site's admins show up here once they're published."
+        {...sectionProps}
+      />
+      <Section
+        id="guild"
+        title="Guild"
+        charts={guildCharts}
+        emptyText="Nothing here yet. Star Charts shared with your guild show up here."
+        {...sectionProps}
+      />
+      <Section
+        id="bookmarked"
+        title="Bookmarked"
+        charts={bookmarkedCharts}
+        emptyText="Nothing here yet. Bookmark a Star Chart to keep it handy here."
+        {...sectionProps}
+      />
+      {canCurate && (
+        <Section
+          id="moderation"
+          title="All Shared"
+          charts={allSharedCharts}
+          emptyText="Nothing shared yet. Star Charts marked Shared by their owners show up here for review."
+          {...sectionProps}
+        />
       )}
-      {noCharts && (
-        <Card
-          chamfered
-          padding="none"
-          showDiagonalBorders
-          edgeColor="var(--color-primary)"
-          className="starcharts-empty"
-        >
-          <span className="starcharts-empty-accent" aria-hidden="true" />
-          <p className="starcharts-empty-text">No star charts to show yet.</p>
-        </Card>
-      )}
-      <Section id="mine" title="Mine" charts={myCharts} {...sectionProps} />
-      <Section id="official" title="Official" charts={curatedCharts} {...sectionProps} />
-      <Section id="guild" title="Guild" charts={guildCharts} {...sectionProps} />
-      <Section id="bookmarked" title="Bookmarked" charts={bookmarkedCharts} {...sectionProps} />
-      {canCurate && <Section id="moderation" title="All Shared" charts={allSharedCharts} {...sectionProps} />}
     </div>
   );
 }
